@@ -1,1 +1,687 @@
-# 2017-Microbiome-Workshop
+# Module X Metatranscriptomics Lab
+
+**This work is licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-sa/3.0/deed.en_US). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
+
+Overview
+--------
+
+This tutorial will take you through a pipeline for processing metatranscriptomic data. The pipeline, developed by the Parkinson lab, consists of various steps which are as follows:
+
+1.  Remove adaptor sequences, which are added during library preparation and sequencing steps, and trim low quality bases and sequencing reads.
+2.  Remove duplicate reads to reduce processing time for following steps.
+3.  Remove vector contamination (reads derived from cloning vectors, spike-ins, and primers).
+4.  Remove host reads (if exploring a microbiome in which the host is an issue).
+5.  Remove abundant rRNA sequences which typically dominate metatranscriptomic datasets despite the use of rRNA removal kits.
+6.  Add duplicated reads, removed in step 2, back to the data set to improve quality of assemblies.
+7.  Classify reads to known taxonomic groups and visualize the taxonomic composition of your dataset.
+9.  Assemble the reads into contigs to improve annotation quality.
+10.  Annotate reads to known genes.
+11.  Map identified genes to a "system" dataset for network visualization - here a protein-protein interaction map based on E. coli proteins.
+12.  Generate normalized expression values associated with each gene.
+13. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
+
+The whole metatranscriptomic pipeline includes existing bioinformatic tools and a series of Python scripts that handle file format conversion and output parsing. We will go through these steps to illustrate the complexity of the process and the underlying tools and scripts.
+
+New, faster, and/or more accurate tools are being developed all the time, and it is worth bearing in mind that any pipelines need to be flexible to incorporate these tools as they get adopted as standards by the community. For example, over the past two years, our lab has transitioned from cross\_match to Trimmomatic and from BLAST to DIAMOND.
+
+To illustrate the process we are going to use sequence reads generated from the contents of the colon of a mouse. These are 150 bp single-end reads. Paired-end reads can also be used, and are often preferred because they can improve annotation quality when there is enough overlap in the read pairs to improve the effective average read length. Working with paired-end data involves an additional data processing step (merging of overlapping reads) produces more files during data processing (files for merged/singleton reads, forward reads, and reverse reads), but the structure of a pipeline for paired-end data is similar to the pipeline described here and can be readily adapted.
+
+Rather than use the entire set of 25 million read, which might take several days to process on a desktop, the tutorial will take you through processing a subset of 100,000 reads.
+
+Preliminaries
+-------------
+
+### Amazon node
+
+Read [these directions](http://bioinformatics-ca.github.io/logging_into_the_Amazon_cloud/) for information on how to log in to your assigned Amazon node.
+
+### Work directory
+
+Create a new directory that will store all of the files created in this lab.
+
+```
+rm -rf ~/workspace/module5
+mkdir -p ~/workspace/module5
+cd ~/workspace/module5
+ln -s ~/CourseData/metagenomics/metatranscriptomics/* .
+```
+
+**Notes**:
+
+-   The `ln -s` command adds symbolic links of all of the files contained in the (read-only) `~/CourseData/metatranscriptomics` directory.
+
+### Input files
+
+Our data set consists of 150 bp single-end Illumina reads generated from mouse colon contents. To inspect their contents:
+
+```
+less mouse1.fastq
+```
+
+**Notes**:
+
+-   Type `q` to exit `less`.
+
+### Checking read quality with FastQC
+
+```
+fastqc mouse1.fastq
+```
+
+The FastQC report is generated in a HTML file, mouse1\_fastqc.html. You'll also find a zip file which includes data files used to generate the report.
+
+To open the HTML report file, please go to your workspace folder from your web browser with URL <http://cbwxx.dyndns.info/module5>, where xx is your unique CBW number. By double clicking on the HTML file, you can go through the report and find the following information:
+
+-   Basic Statistics: Basic information of the mouse RNA-seq data, e.g. the total number of reads, read length, GC content.
+-   Per base sequence quality: An overview of the range of quality values across all bases at each position.
+-   Per Base Sequence Content: A plot showing nucleotide bias across sequence length.
+-   Overrepresented Sequences: Sequences which comprise >0.1% of all sequences provided.
+-   Adapter Content: Provides information on the level of adaptor contamination in your sequence sample.
+
+**Notes**:
+
+-   As you look at the reports, try running BLAST via the [NCBI website](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastSearch) on some of the overrepresented sequences, by copy/paste, to get an idea of what they might be.
+
+***Question: What do overrepresented sequences map to?***
+
+Processing the Reads
+--------------------
+
+### Step 1. Remove adaptor sequences and trim low quality sequences. 
+
+Trimmomatic can rapidly identify and trim adaptor sequences, as well as identify and remove low quality sequence data - you can download and install on your own computer from their project [website](http://www.usadellab.org/cms/?page=trimmomatic). 
+
+```
+ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapter
+java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:adapter.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+```
+
+**Notes**:
+
+-   `ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapter` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
+-   The command line parameters are:
+    -   `SE`: The input data are single-end reads.
+    -   `ILLUMINACLIP:Adapter:2:30:10`: remove the adaptors.
+    -   `LEADING:3`: Trims bases at the beginning of a read if they are below quality score of 3.
+    -   `TRAILING:3`: Trims bases at the end of a read if they are below quality score of 3.
+    -   `SLIDINGWINDOW:4:15`: Scan with a window of size 4 for reads with local quality below a score of 15, and trim if found.
+    -   `MINLEN:50`: Delete a sequence with a length less than 50.
+
+***Question: How many low quality sequences have been removed?***
+
+Checking read quality with FastQC:
+
+```
+fastqc mouse1_trim.fastq
+```
+
+Compare with the previous report to see changes in the following sections:
+
+-   Basic Statistics
+-   Per base sequence quality
+-   Overrepresented sequences
+
+**Optional: Paired-end read merging**
+
+If you were working with a paired-end dataset, we could identify pairs of sequence reads that overlap and can therefore be merged into a single sequence. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch):
+
+```
+vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastq_ascii 64 --fastqout mouse_merged_trim.fastq --fastqout_notmerged_fwd mouse1_merged_trim.fastq --fastqout_notmerged_rev mouse2_merged_trim.fastq
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `--fastq_mergepairs` Instructs VSEARCH to use the read merging algorithm to merge overlapping paired-end reads
+    -   `--reverse` Indicates the name of the file with the 3' to 5' (reverse) paired-end reads
+    -   `--fastq_ascii 64` The smallest ASCII value of the characters used to represent quality values of bases in FASTQ files. Here we set this to 64 consistent with the Illumina platform that was used to generate the data.
+    -   `--fastqout` Indicates the output file contain the overlapping paired-end reads
+    -   `--fastqout_notmerged_fwd` and `--fastqout_notmerged_rev` Indicates the output files containing the non-overlapping paired-end reads
+
+If you want to see the distribution of merged read lengths you can use fastqc to examine the read properties:
+
+```
+fastqc mouse_merged_trim.fastq
+```
+
+**Read quality filtering**
+
+Trimmomatic, which was used to remove the adapters and trim low quality bases in the reads, uses a sliding widow method to remove contigous regions of low quality bases in reads. However, it is worthwhile to impose an overall read quality threshold to ensure that all reads being used in our analyses are of sufficiently error-free. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch) (when processing paired-end data, this step should come **after** the read merging step):
+
+```
+vsearch --fastq_filter mouse1_trim.fastq --fastq_ascii 64 --fastq_maxee 1.0 --fastqout mouse1_qual.fastq
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `--fastq_filter ` Instructs VSEARCH to use the quality filtering algorithm to remove low quality reads
+    -   `--fastq_ascii 64` The smallest ASCII value of the characters used to represent quality values of bases in FASTQ files. Here we set this to 64 consistent with the Illumina platform that was used to generate the data.
+    -   `--fastq_maxee 1.0` The expected error threshold. Set at 1. Any reads with quality scores that suggest that the average expected number of errors in the read are greater than 1 will be filtered.
+    -   `--fastqout` Indicates the output file contain the quality filtered reads
+
+### Step 2. Remove duplicate reads
+
+To significantly reduce the amount of computating time required for identification and filtering of rRNA reads, we perform a dereplication step to remove duplicated reads using the software tool CD-HIT which can be obtained from this [website](https://github.com/weizhongli/cdhit).
+
+```
+/usr/local/prg/cd-hit-v4.6.7-2017-0501/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `-i`: The input fasta or fastq file.
+    -   `-o`: The output file containing dereplicated sequences, where a unique representative sequence is used to represent each set of sequences with multiple replicates.
+-   A second output file `mouse1_unique.fastq.clstr` is created which shows exactly which replicated sequences are represented by each unique sequence in the dereplicated file.
+
+***Question: Can you find how many unique reads there are?***
+
+While the number of replicated reads in this small dataset is relatively low, with larger datasets, this step can reduce file size by as much as 50-80%
+
+### Step 3. Remove vector contamination
+
+To identify and filter reads from sources of vector, adapter, linker, and primer contamination we the Burrows Wheeler aligner (BWA) and the BLAST-like alignment tool (BLAT) to search against a database of cow sequences. As a reference database for identifying contaminating vector and adaptor sequences we rely on the UniVec\_Core dataset which is a fasta file of known vectors and common sequencing adaptors, linkers, and PCR Primers derived from the NCBI Univec Database. Please download it into your working directory first.
+
+```
+wget ftp://ftp.ncbi.nih.gov/pub/UniVec/UniVec_Core
+```
+
+Now we must generate an index for these sequences for BWA and BLAT using the following commands:
+
+```
+bwa index -a bwtsw UniVec_Core
+samtools faidx UniVec_Core
+makeblastdb -in UniVec_Core -dbtype nucl
+```
+
+Next we can perform alignments for the reads with BWA and filter out any reads that align to our vector database with Samtools using the following commands:
+
+```
+bwa mem -t 4 UniVec_Core mouse1_unique.fastq > mouse1_univec_bwa.sam
+samtools view -bS mouse1_univec_bwa.sam > mouse1_univec_bwa.bam
+samtools fastq -n -F 4 -0 mouse1_univec_bwa_contaminats.fastq mouse1_univec_bwa.bam
+samtools fastq -n -f 4 -0 mouse1_univec_bwa.fastq mouse1_univec_bwa.bam
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `-i`: The input fasta or fastq file.
+
+***Question: Can you find how many reads BWA mapped to the vector database?***
+
+Now we want to perform additional alignments for the reads with BLAT to filter out any remaining reads that align to our vector contamination database. However, BLAT only accepts fasta files so we have to convert our reads from fastq to fasta. This can be done using VSEARCH.
+
+```
+vsearch --fastq_filter mouse1_univec_bwa.fastq --fastq_ascii 64 --fastaout mouse1_univec_bwa.fasta
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `-i`: The input fasta or fastq file.
+
+Now we can use BLAT to perform additional alignments for the reads against our vector contamination database.
+
+```
+blat -noHead -minIdentity=90 -minScore=65  UniVec_Core mouse1_univec_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_univec.blatout
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `-i`: The input fasta or fastq file.
+
+Lastly, we can run a small python script to filter the reads that BLAT does not confidently align to any sequences from our vector contamination database.
+
+```
+BLAT_Contaminant_Filter.py mouse1_univec_bwa.fasta mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
+```
+
+### Step 4. Remove host reads
+
+To identify and filter host reads (here, reads of mouse origin) we repeat the steps above using a database of mouse DNA sequences. For our purposes we use a [mouse genome database](ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz) downloaded from Ensembl.
+
+```
+wget ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz
+tar -xzf Mus_musculus.GRCm38.cds.all.fa.gz
+mv Mus_musculus.GRCm38.cds.all.fa mouse_cds.fa
+```
+
+***Optional:*** In your own future analyses you can choose to complete steps 3 and 4 simultaneously by combining the vector contamination database and the host sequence database using `cat UniVec_Core mouse_cds.fa > contaminants.fa`. However, doing these steps together makes it difficult to tell how much of your reads came specifically from your host organism.
+
+Then we repeat the steps above used to generate an index for these sequences for BWA and BLAT:
+
+```
+bwa index -a bwtsw mouse_cds.fa
+samtools faidx mouse_cds.fa
+makeblastdb -in mouse_cds.fa -dbtype nucl
+```
+
+Now we align and filter out any reads that align to our host sequence database using BWA and Samtools:
+
+```
+bwa mem -t 4 mouse_cds.fa mouse1_univec_blat.fastq > mouse1_mouse_bwa.sam
+samtools view -bS mouse1_mouse_bwa.sam > mouse1_mouse_bwa.bam
+samtools fastq -n -F 4 -0 mouse1_mouse_bwa_contaminats.fastq mouse1_mouse_bwa.bam
+samtools fastq -n -f 4 -0 mouse1_mouse_bwa.fastq mouse1_mouse_bwa.bam
+```
+
+Finally, we use BLAT to perform additional alignments for the reads against our host sequence database.
+
+```
+blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fastq -fine -q=rna -t=dna -out=blast8 mouse1_mouse.blatout
+BLAT_Contaminant_Filter.py mouse1_mouse_bwa.fasta mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
+```
+
+### Step 5. Remove abundant rRNA sequences
+
+rRNA genes tend to be highly expressed in all samples and must therefore be screened out to avoid lengthy downstream processing times for the assembly and annotation steps. You could use sequence similarity tools such as BWA or BLAST for this step, but we find [Infernal] (http://infernal.janelia.org/), albeit slower, is more sensitive as it relies on a database of covariance models (CMs) describing rRNA sequence profiles based on the Rfam database. Due to the reliance on CMs, Infernal, can take as much as 26 hours on a single processor for ~100,000 reads on a single core. So we will skip this step and use a precomputed file, `mouse1_rRNA.infernalout`, from a tar file `precomputed_files.tar.gz`.
+
+``` 
+tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
+```
+
+**Notes**:
+
+-   The infernal commands you would use are given below:
+    -   cmscan -o cow1\_rRNA.log --tblout cow1\_rRNA.infernalout --noali --notextw --rfam -E 0.001 Rfam.cm cow1\_qual\_all\_unique.fasta
+    -   cmscan -o cow2\_rRNA.log --tblout cow2\_rRNA.infernalout --noali --notextw --rfam -E 0.001 Rfam.cm cow2\_qual\_all\_unique.fasta
+-   The command line parameters are:
+    -   `--tblout`: save a simple tabular file.
+    -   `--noali`: omit the alignment section from the main output. This can greatly reduce the output volume.
+    -   `--rfam`: use a strict filtering strategy devised for large database. This will speed the search at a potential cost to sensitivity.
+    -   `-E`: report target sequences with an E-value of 0.001.
+
+Finally from all these output files we need to filter out the rRNA reads:
+
+```
+X.py mouse1_rRNA.infernalout mouse1_mouse_blat.fastq mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
+```
+
+**Notes**:
+
+-   The script parameters you would use are given below:
+    -   1 - apply cutoff values.
+    -   0.001 - maximal E-value is 0.001
+    -   90 - percentage of identity is 90%
+
+***Question: How many rRNA sequences were identified? How many reads are now remaining?***
+
+There's a lot of rRNAs!!
+
+Check read quality again with FastQC:
+
+```
+fastqc cow1_qual_unique_rRNA.fastq
+fastqc cow1_qual_unique_n_rRNA.fastq
+```
+
+Again compare with the previous report to identify differences:
+
+-   Basic Statistics
+-   Per base sequence quality
+-   Overrepresented sequences
+
+
+### Step 6. Rereplication
+
+After removing contaminants, host sequences, and rRNA, we need to replace the previously removed replicate reads back in our data set.
+
+```
+X.py mouse1_unique_mRNA.fastq mouse1_qual.fastq mouse1_mRNA.fastq
+```
+
+***Question: How many putative mRNA sequences were identified? How many unique mRNA sequences?***
+
+Check read quality with FastQC:
+
+```
+fastqc mouse1_mRNA.fastq 
+```
+
+Compare the changes in the following sections to the read quality before filtering contaminant, host, and rRNA reads:
+
+-   Basic Statistics
+-   Per base sequence quality
+-   Overrepresented sequences
+
+### Step 7. Taxonomic Classification
+
+Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju] (https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classification in a file called `mouse1_classification.tsv`.
+
+**Notes**:
+
+-   The kaiju commands you would use are given below:
+    -   kaiju
+
+We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Family-level taxa from which we find more than 100 reads which limits the number of spurious classifications.
+
+```
+X.py
+```
+
+Then we generate a human readable summary of the classification using Kaiju.
+
+```
+kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_classification_Summary.tsv -r family
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `-i`: The input fasta or fastq file.
+
+Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
+
+```
+kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_classification_Krona.tsv
+ktImportText -n Bacteria -o mouse1_classification.html mouse1_classification_Krona.tsv
+```
+
+We can then view this pie chart representation of our dataset using a web browser:
+
+```
+firefox mouse1_classification.html
+```
+
+
+### Step 8. Assembling reads
+
+Previous studies have shown that assembling reads into larger contigs significantly increases our ability to annotate them to known genes through sequence similarity searches. Here we will apply the SPAdes genome assemblers transcript assembly algorith to our set of putative mRNA reads.
+
+```
+spades.py --rna mouse1_mRNA.fastq -o mouse1_spades
+mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `--seqType`: type of reads: ( fa, or fq ).
+    -   `--CPU`: number of CPUs to use is 8.
+    -   `--max_memory`: max memory to use by Trinity is 10GB.
+    -   `--min_contig_length`: .
+    -   `--full_cleanup`: remove the temporary folder and results.
+-   Trinity assembles reads into contigs which are placed into a file named "trinity\_out\_dir.Trinity.fasta". By entering "less trinity\_out\_dir.Trinity.fasta", you can see the format of contig sequences as follows:
+
+In order to extract unassembled reads we need to map all putative mRNA reads to our set of assembled contigs by BWA.
+
+First, we need to build an index to allow BWA to search against our set of contigs:
+
+```
+bwa index -a bwtsw mouse1_contigs.fasta
+```
+
+Next we attempt to map the entire set of putative mRNA reads to this contig database:
+
+```
+bwa mem -t 4 mouse1_contigs.fasta mouse1_mRNA.fastq > mouse1_contigs.sam
+```
+
+We then extract unmapped reads into a fastq format file for subsequent processing and generate a mapping table in which each contig is associated with the number of reads used to assemble that contig. This table is useful for determining how many reads map to a contig and is used for determining relative expression (see Steps 6 and 8).
+
+```
+X.py 
+```
+
+***Question: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***:
+
+Your numbers may differ from these as the algorithm that BWA uses can alter mapping from run to run.
+
+### Step 9. Annotate reads to known genes/proteins
+
+Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA, BLAT and DIAMOND. While BWA and BLAT provide high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless they are quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
+
+Since BWA and BLAT utilize nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA and BLAT. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI:.
+
+**Notes**:
+
+-   the commands used to build the indexed databases are as follows - you don't need to do these!
+    -   `bwa index -a microbial_all_cds.fasta`
+    -   `samtools faidx microbial_all_cds.fasta`
+    -   `makeblastdb -in microbial_all_cds.fasta -dbtype nucl`
+    -   `diamond makedb -p 8 --in nr -d nr`
+
+-   If you got the error message: "Cannot allocate memory", or the running speed is very slow, especially while doing BWA or DIAMOND mapping, you can skip the steps and use our precomputed files from the tar file `precomputed_files.tar.gz`. DIAMOND in particular may take a long time to run.
+
+**BWA searches against microbial genome database**
+
+for contigs:
+
+```
+bwa mem -t 4 microbial_all_cds.fasta mouse1_contigs.fasta > mouse1_contigs_annotation_bwa.sam
+X.py mouse1_contigs_postbwa.fasta
+```
+
+for unassembled reads:
+
+```
+bwa mem -t 4 microbial_all_cds.fasta mouse1_unassembled.fasta > mouse1_unassembled_annotation_bwa.sam
+X.py mouse1_unassembled_postbwa.fasta
+```
+
+**Notes**:
+
+-   Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
+
+**BLAT searches against microbial genome database**
+
+Because the microbial genome database is very large, we can run into "out-of-memory" features(!) when running BLAT. We therefore split the database into two sub-databases, i.e. `microbial_all_cds_1.fasta` and `microbial_all_cds_2.fasta`. After building the corresponding indexed databases, we then issue the following commands:
+
+for contigs:
+
+```
+blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_1.fasta mouse1_contigs_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat_1.blatout
+blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_2.fasta mouse1_contigs_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat_2.blatout
+cat mouse1_contigs_annotation_blat_[1-2].blatout > mouse1_contigs_annotation_blat.blatout
+X.py mouse1_contigs_postblat.fasta
+```
+
+for unassembled reads:
+
+```
+blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_1.fasta mouse1_unassembled_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat_1.blatout
+blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_2.fasta mouse1_unassembled_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat_2.blatout
+cat mouse1_unassembled_annotation_blat_[1-2].blatout > mouse1_unassembled_annotation_blat.blatout
+X.py mouse1_unassembled_postblat.fasta
+```
+
+**Notes**:
+
+-   The command line parameters are:
+    -   `-noHead`: Suppresses .psl header (so it's just a tab-separated file).
+    -   `-minIdentity`: Sets minimum sequence identity is 90%.
+    -   `-minScore`: Sets minimum score is 65. This is the matches minus the mismatches minus some sort of gap penalty.
+    -   `-fine`: For high-quality mRNAs.
+    -   `-q`: Query type is RNA sequence.
+    -   `-t`: Database type is DNA sequence.
+-   The running speed of blat is relatively slow. To save your time, you can skip the blat mapping steps by extracting corresponding blatout files:
+    -   tar -zxf precomputed_files.tar.gz cow\_contigs\_n\_micro\_cds.blatout cow1\_singletons\_n\_micro\_cds.blatout cow2\_singletons\_n\_micro\_cds.blatout
+
+**DIAMOND against the non-redundant (NR) protein DB**
+
+DIAMOND is a BLAST-like local aligner for mapping translated DNA query sequences against a protein reference database (BLASTX alignment mode). The speedup over BLAST is up to 20,000 on short reads at a typical sensitivity of 90-99% relative to BLAST depending on the data and settings. However, for our dataset running time is still long (timing scales by size of reference database; not so much by number of reads) so please use the precomputed files.
+
+```
+tar -zxf precomputed_files.tar.gz mouse1_contigs.diamondout mouse1_unassembled.diamondout
+```
+
+**Notes**:
+
+-  If you were to run DIAMOND yourself, you would use the following commands:
+   -   `mkdir dmnd_tmp`
+   -   `diamond blastx -p 4 -d nr -q mouse1_contigs_postblat.fasta -o mouse1_contigs.dmdout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
+   -   `diamond blastx -p 4 -d nr -q mouse1_unassembled_postblat.fasta -o mouse1_unassembled.diamondout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
+-   The command line parameters are:
+    -   `-p`: Number of threads to use in the search is 4.
+    -   `-q`: Input file name.
+    -   `-d`: Database name.
+    -   `-e`: Expectation value (E) threshold for saving hits.
+    -   `-k`: Maximum number of aligned sequences to keep is 10.
+    -   `-t`: Temporary folder.
+    -   `-o`: Output file name.
+    -   `-f`: Output file is in a tabular format.
+
+From the output of these searches, you next need to extract the top matched proteins using the following script and generate the final read to gene/protein mapping tables:
+
+```
+X.py 
+```
+
+**Notes**
+
+-   Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
+-   Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit') that derives from a bacteria. As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a seperate issue however! Again, due to the size of the output file and the processing time, we will rely on the use of pre-computed files.
+
+***Question: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
+
+-   BWA: Total number of mapped-reads = 11 reads
+-   BLAT: Total number of mapped-reads = 609 reads
+-   DIAMOND: Total number of mapped-reads = 1255 reads
+-   Total number of mapped micro\_cds genes = 390
+-   Total number of mapped nr proteins = 966
+
+Thus of ~6100 reads of putative microbial mRNA origin, we can annotate only ~1800 of them!! This is not uncommon for many microbiome samples without good reference sequences.
+
+### Step 10. Map identified genes to a "system" dataset for network visualization - here a protein-protein interaction map based on E. coli proteins.
+
+To help interpret our metatranscriptomic datasets from a functional perspective, we rely on mapping our data to functional networks such as metabolic pathways and maps of protein complexes. Here we will use a previously published map of functional protein-protein interactions (PPI) constructed for E. coli ([Peregrín-Alvarez JM. *et al.*, PLoS Comput Biol. 2009](http://www.ncbi.nlm.nih.gov/pubmed/19798435)) as a proxy to get a systems-level view of annotated reads. While it would be nice to have access to a 'pan-bacterial' protein interaction network to account for complexes from different species, such datasets do not currently exist.
+
+To begin, we need to first match our annotated genes (from Step. 9) to E. coli homologs.
+
+```
+wget EcoliMG1655_std
+makeblastdb -in EcoliMG1655_std -dbtype nucl
+```
+
+For microbial *genes* identified through our BWA and BLAT searches:
+
+```
+diamond blastx -p 4 -d EcoliMG1655_std -q mouse1_genes.fasta -o mouse1_genes_ecoli_ppi.diamondout -f 6 -t dmnd_tmp -e 10 -k 10
+```
+
+For *proteins* identified through our DIAMOND searches:
+
+```
+diamond blastp -p 4 -d EcoliMG1655_std -q mouse1_proteins.fasta -o mouse1_proteins_ecoli_ppi.diamondout -f 6 -t dmnd_tmp -e 10 -k 10
+```
+
+
+We then need to generate a mapping file which lists E. coli homolog (we use the E. coli 'b'-number as the sequence classifier) for each of our genes/proteins:
+
+```
+X.py
+```
+
+### Step 11. Generate normalized expression values associated with each gene
+
+We have removed low quality bases/reads, vectors, adaptors, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome. 
+
+First, we identify the taxonomic classification for each of the genes and proteins identified in our BWA, BLAT and DIAMOND searches (NCBI taxon ID, species name and phylum). The resulting classifications should be similar to the taxonomic classifications we generated in Step 7 (Kaiju). Taxonomic classifications of our genes/proteins enables us to identify which groups are contributing which functions to the microbiome:
+
+```
+X.py
+```
+
+Then for each gene/protein within each classified specie, we calculate a normalized expression value (Reads Per Kilobase of Sequence Mapped - RPKM):
+
+```
+X.py
+```
+
+**Notes**:
+
+-   The final output file is named `mouse1_RPKM.txt` and has the following format:
+    -   `[geneID/proteinID, length, #reads, taxonID, specie, phylum, RPKM, PPI]`
+    -   `gi|110832861|ref|NC_008260.1|:414014-415204 1191 1 393595 Alcanivorax borkumensis SK2 gammaproteobacteria 450.4456 b3339`
+
+-   There are 1874 reads mapping to 1356 microbial genes.
+
+***Question: have a look at this file, what are the most highly expressed genes? Which phylum appears most active?***
+
+### Step 10. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
+
+To visualize our processed microbiome dataset in the context of the E. coli PPI network, we use the network visualization tool - Cytoscape together with the enhancedGraphics plugin. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
+
+**Open a Cytoscape session file (.cys)**
+
+-   Select `File` -> `Open`
+-   Select the session file and click `Open`
+
+**Loading a node attribute text file (.txt) - this will map attributes to nodes in your network which you can subsequently visualize**
+
+-   Select `File` -&gt; `Import` -&gt; `Table` -&gt; `File`
+-   Select the node file and click `Open`
+-   Select Key Column for network (shared name),
+-   Select Show Mapping Opteins -&gt; Select the primary key column in table and click OK
+
+**Changing node properties - this changes the visual properties of the nodes - here size**
+
+-   Select Style on Control Panel -&gt; Select Node tag at the bottom -&gt; Select Size -&gt; Select Column as RPKM -&gt; Select Mapping Type as Continuous Mapping -&gt; Double click on the Current Mapping to open Continuous Mapping Editor for Node Size -&gt; Select your preferred values
+
+**Changing edge properties - this changes visual properties of edges connecting nodes - here width of lines**
+
+-   Select Style on Control Panel -&gt; Select Edge tag at the bottom -&gt; Select Width -&gt; Select Column as Scores -&gt; Select Mapping Type as Continuous Mapping -&gt; Double click on the Current Mapping to open Continuous Mapping Editor for Edge Width -&gt; Select your preferred values
+
+**Installing Apps - Cytoscape features the ability to load in 3rd party applications that provide additional functionality**
+
+-   Select Apps —&gt; select App Manager -&gt; Type in enhancedGraphics in the Search box -&gt; Select enhancedGraphics and click Install
+
+**Basic Network Navigation**
+
+-   Use the zooming buttons located on the toolbar to zoom in and out of the interaction network shown in the current network display.
+-   Using the scroll wheel of your mouse, you can zoom in by scrolling up and zoom out by scrolling downwards.
+-   Select nodes on the current network display, you will see the nodes' attributes from the Table Panel (Node Table). Same for edges.
+
+Here we will skip the steps of generating the node attribute file to map onto the E. coli PPI network - [cow_PPI.nodes.txt](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Cow_PPI.nodes.txt) from "cow\_table\_RPKM\_all.txt", however for your information the steps involve:
+
+-   predefining taxonomic categories (here we use the following 12 phylum categories: archaea, protozoan, bacteria, actinobacteria, bacteroidetes, gammaproteobacteria, deltaproteobacteria, betaproteobacteria, alphaproteobacteria, clostridiales, leuconostocaceae, lactobacillaceae, but you could define these categories to fit your microbiome).
+
+<!-- -->
+
+-   calculate RPKM values of each ecoli protein, for every phylum category, by adding RPKM values of the protein's mapped genes/proteins.
+
+<!-- -->
+
+-   generate a node attribute file which is a tab-delimited table with a format as follows:
+    -   the first line is the header - you could use:
+
+```
+ecoli_protein    b#    RPKM    piechart        archaea protozoan       bacteria        
+actinobacteria  bacteroidetes   gammaproteobacteria     deltaproteobacteria     betaproteobacteria
+alphaproteobacteria     clostridiales   leuconostocaceae        lactobacillaceae
+```
+
+-   subsequent lines then use the format, with the final numbers being the RPKM associated with each taxon:
+
+```
+tuf    b3339   106.98  piechart: attributelist="archaea,protozoan,bacteria,actinobacteria,bacteroidetes,
+gammaproteobacteria,deltaproteobacteria,betaproteobacteria,alphaproteobacteria,clostridiales,
+leuconostocaceae,lactobacillaceae" colorlist="#FFA500,#C0C0C0,#EDF252,#0000FF,#FF00FF,#2C94DE,#ED4734,
+#00FFFF,#FFCCFF,#34C400,#A52A2A,#663366" showlabels=false  0   0   45.89   6.86    
+20.77  7.35    2.3 0   4.63    19.18   0   0
+```
+
+Once the node attribute file has been generated, we provide two network files (one based on cell wall biogenesis proteins and one based on transporters) onto which these attributes can be mapped: [ecoli_PPI_cellwall.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_cellwall.cys) or [ecoli_PPI_transporter.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_transporter.cys). While we recommend using the precomputed cytoscape files listed below - you could use these attribute files by downloading them from your module5 directory onto your laptop via scp or winscp. Once downloaded these files can be opened using Cytoscape installed in your local computer. To import node attributes (note you need to have the Ecoli PPI cytoscape file loaded first!):
+
+```
+1) select File -> Import -> Table -> File, select "cow_PPI.nodes.txt" from your working folder,
+click OK from the prompting window. 
+2) from Control Panel, select Style -> Properties -> Paint -> Custom Paint 1 -> Custom Graphics 1, 
+3) click Custom Graphics 1, select piechart for Column, and select Passthrough Mapping for Mapping Type. 
+```
+
+**Notes**:
+
+-   Two cytoscape files with node attributes precalculated are provided for your convenience the first focuses on proteins involved in cell wall biogenesis, the second focuses on proteins involved in transport activities, [ecoli_PPI_cellwall_cow.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_cellwall_cow.cys) and [ecoli_PPI_transporter_cow.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_transporter_cow.cys), open them up and have a play with different visualizations and different layouts - compare the circular layouts with the spring embedded layouts for example. If you want to go back to the original layout (created manually - yes each node was selected and dragged into position to group e.g. proteins involved in the same transport activity!) then you will have to reload the file
+-   Cytoscape can be tempermental. If you don't see piecharts for the nodes, they appear as blank circles, you can show these manually. Under the 'properties' panel on the left, there is an entry labelled 'Custom Graphics 1'. Double click the empty box on the left (this is for default behaviour) - this will pop up a new window with a choice of 'Images' 'Charts' and 'Gradients' - select 'Charts', choose the chart type you want (pie chart or donut for example) and select the different bacterial taxa by moving them from "Available Columns" to "Selected Columns". Finally click on 'Apply' in bottom right of window (may not be visible until you move the window).
+
+Questions:
+- Which genes are most highly expressed in these two systems?
+- Which taxa are responsible for most gene expression?
+- Can you identify sub-systems (groups of interacting genes) that display anomalous taxonomic profiles?
+- Think about how you might interpret these findings; for example are certain taxa responsible for a specific set of genes that operate together to fulfill a key function?
+- Can you use the gene annotations to identify the functions of these genes through online searches?
+- Think about the implications of sequence homology searches, what may be some caveats associated with interpreting these datasets?
