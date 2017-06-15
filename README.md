@@ -1,4 +1,4 @@
-# Module X Metatranscriptomics Lab
+# Metatranscriptomics Practical Lab
 
 **This work is licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-sa/3.0/deed.en_US). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
 
@@ -68,21 +68,14 @@ less mouse1.fastq
 fastqc mouse1.fastq
 ```
 
-The FastQC report is generated in a HTML file, mouse1\_fastqc.html. You'll also find a zip file which includes data files used to generate the report.
+The FastQC report is generated in a HTML file, `mouse1_fastqc.html`. You'll also find a zip file which includes data files used to generate the report.
 
-To open the HTML report file, please go to your workspace folder from your web browser with URL <http://cbwxx.dyndns.info/module5>, where xx is your unique CBW number. By double clicking on the HTML file, you can go through the report and find the following information:
+To open the HTML report file use the following command `firefox mouse1_fastqc.html` then you can go through the report and find the following information:
 
 -   Basic Statistics: Basic information of the mouse RNA-seq data, e.g. the total number of reads, read length, GC content.
 -   Per base sequence quality: An overview of the range of quality values across all bases at each position.
 -   Per Base Sequence Content: A plot showing nucleotide bias across sequence length.
--   Overrepresented Sequences: Sequences which comprise >0.1% of all sequences provided.
 -   Adapter Content: Provides information on the level of adaptor contamination in your sequence sample.
-
-**Notes**:
-
--   As you look at the reports, try running BLAST via the [NCBI website](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastSearch) on some of the overrepresented sequences, by copy/paste, to get an idea of what they might be.
-
-***Question: What do overrepresented sequences map to?***
 
 Processing the Reads
 --------------------
@@ -92,8 +85,8 @@ Processing the Reads
 Trimmomatic can rapidly identify and trim adaptor sequences, as well as identify and remove low quality sequence data - you can download and install on your own computer from their project [website](http://www.usadellab.org/cms/?page=trimmomatic). 
 
 ```
-ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapter
-java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:adapter.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters
+java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
 ```
 
 **Notes**:
@@ -101,7 +94,7 @@ java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq m
 -   `ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapter` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
 -   The command line parameters are:
     -   `SE`: The input data are single-end reads.
-    -   `ILLUMINACLIP:Adapter:2:30:10`: remove the adaptors.
+    -   `ILLUMINACLIP:Adapters:2:30:10`: remove the adaptors.
     -   `LEADING:3`: Trims bases at the beginning of a read if they are below quality score of 3.
     -   `TRAILING:3`: Trims bases at the end of a read if they are below quality score of 3.
     -   `SLIDINGWINDOW:4:15`: Scan with a window of size 4 for reads with local quality below a score of 15, and trim if found.
@@ -113,20 +106,20 @@ Checking read quality with FastQC:
 
 ```
 fastqc mouse1_trim.fastq
+firefox mouse1_trim_fastqc.html
 ```
 
 Compare with the previous report to see changes in the following sections:
 
 -   Basic Statistics
 -   Per base sequence quality
--   Overrepresented sequences
 
 **Optional: Paired-end read merging**
 
 If you were working with a paired-end dataset, we could identify pairs of sequence reads that overlap and can therefore be merged into a single sequence. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch):
 
 ```
-vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastq_ascii 64 --fastqout mouse_merged_trim.fastq --fastqout_notmerged_fwd mouse1_merged_trim.fastq --fastqout_notmerged_rev mouse2_merged_trim.fastq
+vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastqout mouse_merged_trim.fastq --fastqout_notmerged_fwd mouse1_merged_trim.fastq --fastqout_notmerged_rev mouse2_merged_trim.fastq
 ```
 
 **Notes**:
@@ -134,7 +127,6 @@ vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastq
 -   The command line parameters are:
     -   `--fastq_mergepairs` Instructs VSEARCH to use the read merging algorithm to merge overlapping paired-end reads
     -   `--reverse` Indicates the name of the file with the 3' to 5' (reverse) paired-end reads
-    -   `--fastq_ascii 64` The smallest ASCII value of the characters used to represent quality values of bases in FASTQ files. Here we set this to 64 consistent with the Illumina platform that was used to generate the data.
     -   `--fastqout` Indicates the output file contain the overlapping paired-end reads
     -   `--fastqout_notmerged_fwd` and `--fastqout_notmerged_rev` Indicates the output files containing the non-overlapping paired-end reads
 
@@ -142,6 +134,7 @@ If you want to see the distribution of merged read lengths you can use fastqc to
 
 ```
 fastqc mouse_merged_trim.fastq
+firefox mouse_merged_trim_fastqc.html
 ```
 
 **Read quality filtering**
@@ -149,16 +142,30 @@ fastqc mouse_merged_trim.fastq
 Trimmomatic, which was used to remove the adapters and trim low quality bases in the reads, uses a sliding widow method to remove contigous regions of low quality bases in reads. However, it is worthwhile to impose an overall read quality threshold to ensure that all reads being used in our analyses are of sufficiently error-free. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch) (when processing paired-end data, this step should come **after** the read merging step):
 
 ```
-vsearch --fastq_filter mouse1_trim.fastq --fastq_ascii 64 --fastq_maxee 1.0 --fastqout mouse1_qual.fastq
+vsearch --fastq_filter mouse1_trim.fastq --fastq_maxee 2.0 --fastqout mouse1_qual.fastq
 ```
 
 **Notes**:
 
 -   The command line parameters are:
     -   `--fastq_filter ` Instructs VSEARCH to use the quality filtering algorithm to remove low quality reads
-    -   `--fastq_ascii 64` The smallest ASCII value of the characters used to represent quality values of bases in FASTQ files. Here we set this to 64 consistent with the Illumina platform that was used to generate the data.
-    -   `--fastq_maxee 1.0` The expected error threshold. Set at 1. Any reads with quality scores that suggest that the average expected number of errors in the read are greater than 1 will be filtered.
+    -   `--fastq_maxee 2.0` The expected error threshold. Set at 1. Any reads with quality scores that suggest that the average expected number of errors in the read are greater than 1 will be filtered.
     -   `--fastqout` Indicates the output file contain the quality filtered reads
+
+Checking read quality with FastQC:
+
+```
+fastqc mouse1_qual.fastq
+firefox mouse1_qual_fastqc.html
+```
+
+Compare with the previous reports to see changes in the following sections:
+
+-   Basic Statistics
+-   Per base sequence quality
+-   Per sequence quality
+
+***Question: How has the per read sequence quality curve changed?***
 
 ### Step 2. Remove duplicate reads
 
@@ -173,7 +180,7 @@ To significantly reduce the amount of computating time required for identificati
 -   The command line parameters are:
     -   `-i`: The input fasta or fastq file.
     -   `-o`: The output file containing dereplicated sequences, where a unique representative sequence is used to represent each set of sequences with multiple replicates.
--   A second output file `mouse1_unique.fastq.clstr` is created which shows exactly which replicated sequences are represented by each unique sequence in the dereplicated file.
+-   A second output file `mouse1_unique.fastq.clstr` is created which shows exactly which replicated sequences are represented by each unique sequence in the dereplicated file and a third, empty, output file, `mouse1_unique.fastq2.clstr` is also created which is only used for paired-end reads.
 
 ***Question: Can you find how many unique reads there are?***
 
@@ -206,21 +213,22 @@ samtools fastq -n -f 4 -0 mouse1_univec_bwa.fastq mouse1_univec_bwa.bam
 
 **Notes**:
 
--   The command line parameters are:
-    -   `-i`: The input fasta or fastq file.
+-   The commands to the following tasks:
+    -   `bwa mem`: Generates alignments of reads to the vector contaminant database
+    -   `samtools view`: Converts the .sam output of bwa into .bam for the following steps
+    -   `samtools fastq`: Generates fastq outputs for all reads that mapped to the vector contaminant database (`-F 4`) and all reads that did not map to the vector contaminant database (`-f 4`)
 
 ***Question: Can you find how many reads BWA mapped to the vector database?***
 
 Now we want to perform additional alignments for the reads with BLAT to filter out any remaining reads that align to our vector contamination database. However, BLAT only accepts fasta files so we have to convert our reads from fastq to fasta. This can be done using VSEARCH.
 
 ```
-vsearch --fastq_filter mouse1_univec_bwa.fastq --fastq_ascii 64 --fastaout mouse1_univec_bwa.fasta
+vsearch --fastq_filter mouse1_univec_bwa.fastq --fastaout mouse1_univec_bwa.fasta
 ```
 
 **Notes**:
 
--   The command line parameters are:
-    -   `-i`: The input fasta or fastq file.
+-   The VSEARCH command used, `--fastq_filter`, is the same as the command used to filter low quality reads in Step 1. However, here we give no filter criteria so all input reads are passed to the output fasta file.
 
 Now we can use BLAT to perform additional alignments for the reads against our vector contamination database.
 
@@ -231,13 +239,25 @@ blat -noHead -minIdentity=90 -minScore=65  UniVec_Core mouse1_univec_bwa.fasta -
 **Notes**:
 
 -   The command line parameters are:
-    -   `-i`: The input fasta or fastq file.
+    -   `-noHead`: Suppresses .psl header (so it's just a tab-separated file).
+    -   `-minIdentity`: Sets minimum sequence identity is 90%.
+    -   `-minScore`: Sets minimum score is 65. This is the matches minus the mismatches minus some sort of gap penalty.
+    -   `-fine`: For high-quality mRNAs.
+    -   `-q`: Query type is RNA sequence.
+    -   `-t`: Database type is DNA sequence.
 
 Lastly, we can run a small python script to filter the reads that BLAT does not confidently align to any sequences from our vector contamination database.
 
 ```
-BLAT_Contaminant_Filter.py mouse1_univec_bwa.fasta mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
+1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
 ```
+
+**Notes**:
+
+The argument structure for this script is:
+`1_BLAT_Filter.py <Input_Reads.fq> <BLAT_Output_File> <Unmapped_Reads_Output> <Mapped_Reads_Output>`
+
+Here, BLAT does not identify any additional sequences which align to the vector contaminant database. However, we have found that BLAT often finds some alignments to vector contaminants missed by BWA in large multi-million read datasets.
 
 ### Step 4. Remove host reads
 
@@ -245,11 +265,9 @@ To identify and filter host reads (here, reads of mouse origin) we repeat the st
 
 ```
 wget ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz
-tar -xzf Mus_musculus.GRCm38.cds.all.fa.gz
+gzip -d Mus_musculus.GRCm38.cds.all.fa.gz
 mv Mus_musculus.GRCm38.cds.all.fa mouse_cds.fa
 ```
-
-***Optional:*** In your own future analyses you can choose to complete steps 3 and 4 simultaneously by combining the vector contamination database and the host sequence database using `cat UniVec_Core mouse_cds.fa > contaminants.fa`. However, doing these steps together makes it difficult to tell how much of your reads came specifically from your host organism.
 
 Then we repeat the steps above used to generate an index for these sequences for BWA and BLAT:
 
@@ -271,13 +289,18 @@ samtools fastq -n -f 4 -0 mouse1_mouse_bwa.fastq mouse1_mouse_bwa.bam
 Finally, we use BLAT to perform additional alignments for the reads against our host sequence database.
 
 ```
-blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fastq -fine -q=rna -t=dna -out=blast8 mouse1_mouse.blatout
-BLAT_Contaminant_Filter.py mouse1_mouse_bwa.fasta mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
+vsearch --fastq_filter mouse1_mouse_bwa.fastq --fastaout mouse1_mouse_bwa.fasta
+blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_mouse.blatout
+1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
 ```
+
+***Question: How many reads did BWA and BLAT align to the mouse host sequence database?***
+
+***Optional:*** In your own future analyses you can choose to complete steps 3 and 4 simultaneously by combining the vector contamination database and the host sequence database using `cat UniVec_Core mouse_cds.fa > contaminants.fa`. However, doing these steps together makes it difficult to tell how much of your reads came specifically from your host organism.
 
 ### Step 5. Remove abundant rRNA sequences
 
-rRNA genes tend to be highly expressed in all samples and must therefore be screened out to avoid lengthy downstream processing times for the assembly and annotation steps. You could use sequence similarity tools such as BWA or BLAST for this step, but we find [Infernal] (http://infernal.janelia.org/), albeit slower, is more sensitive as it relies on a database of covariance models (CMs) describing rRNA sequence profiles based on the Rfam database. Due to the reliance on CMs, Infernal, can take as much as 26 hours on a single processor for ~100,000 reads on a single core. So we will skip this step and use a precomputed file, `mouse1_rRNA.infernalout`, from a tar file `precomputed_files.tar.gz`.
+rRNA genes tend to be highly expressed in all samples and must therefore be screened out to avoid lengthy downstream processing times for the assembly and annotation steps. You could use sequence similarity tools such as BWA or BLAST for this step, but we find [Infernal] (http://infernal.janelia.org/), albeit slower, is more sensitive as it relies on a database of covariance models (CMs) describing rRNA sequence profiles based on the Rfam database. Due to the reliance on CMs, Infernal, can take as much as 4 hours for ~100,000 reads on a single core. So we will skip this step and use a precomputed file, `mouse1_rRNA.infernalout`, from the tar file `precomputed_files.tar.gz`.
 
 ``` 
 tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
@@ -285,44 +308,31 @@ tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
 
 **Notes**:
 
--   The infernal commands you would use are given below:
-    -   cmscan -o cow1\_rRNA.log --tblout cow1\_rRNA.infernalout --noali --notextw --rfam -E 0.001 Rfam.cm cow1\_qual\_all\_unique.fasta
-    -   cmscan -o cow2\_rRNA.log --tblout cow2\_rRNA.infernalout --noali --notextw --rfam -E 0.001 Rfam.cm cow2\_qual\_all\_unique.fasta
+-   The commands you would use to generate this output with infernal are given below:
+	 -   `vsearch --fastq_filter mouse1_mouse_blat.fastq --fastaout mouse1_mouse_blat.fasta`
+    -   `cmsearch -o mouse1_rRNA.log --tblout mouse1_rRNA.infernalout --anytrunc --rfam -E 0.001 Rfam.cm mouse1_mouse_blat.fasta`
 -   The command line parameters are:
-    -   `--tblout`: save a simple tabular file.
+    -   `-o`: the infernal output log file.
+    -   `--tblout`: the simple tabular output file.
     -   `--noali`: omit the alignment section from the main output. This can greatly reduce the output volume.
+    -   `--anytrunc`: relaxes the thresholds for truncated alignments
     -   `--rfam`: use a strict filtering strategy devised for large database. This will speed the search at a potential cost to sensitivity.
     -   `-E`: report target sequences with an E-value of 0.001.
 
-Finally from all these output files we need to filter out the rRNA reads:
+From this output file we need to use a script to filter out the rRNA reads:
 
 ```
-X.py mouse1_rRNA.infernalout mouse1_mouse_blat.fastq mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
+2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
 ```
 
 **Notes**:
 
--   The script parameters you would use are given below:
-    -   1 - apply cutoff values.
-    -   0.001 - maximal E-value is 0.001
-    -   90 - percentage of identity is 90%
+The argument structure for this script is:
+`2_Infernal_Filter.py <Input_Reads.fq> <Infernal_Output_File> <mRNA_Reads_Output> <rRNA_Reads_Output>`
+
+Here, we only remove a few thousand reads than map to rRNA, but in some datasets rRNA may represent up to 80% of the sequenced reads.
 
 ***Question: How many rRNA sequences were identified? How many reads are now remaining?***
-
-There's a lot of rRNAs!!
-
-Check read quality again with FastQC:
-
-```
-fastqc cow1_qual_unique_rRNA.fastq
-fastqc cow1_qual_unique_n_rRNA.fastq
-```
-
-Again compare with the previous report to identify differences:
-
--   Basic Statistics
--   Per base sequence quality
--   Overrepresented sequences
 
 
 ### Step 6. Rereplication
@@ -330,22 +340,24 @@ Again compare with the previous report to identify differences:
 After removing contaminants, host sequences, and rRNA, we need to replace the previously removed replicate reads back in our data set.
 
 ```
-X.py mouse1_unique_mRNA.fastq mouse1_qual.fastq mouse1_mRNA.fastq
+3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
 ```
+
+**Notes**:
+
+The argument structure for this script is:
+`3_Reduplicate.py <Duplicated_Reference_File> <Deduplicated_File> <CDHIT_Cluster_File> <Reduplicated_Output>`
 
 ***Question: How many putative mRNA sequences were identified? How many unique mRNA sequences?***
 
-Check read quality with FastQC:
+Now that we have filtered vectors, adapters, linkers, primers, host sequences, and rRNA, check read quality with FastQC:
 
 ```
-fastqc mouse1_mRNA.fastq 
+fastqc mouse1_mRNA.fastq
+firefox mouse1_mRNA_fastgc.html
 ```
 
-Compare the changes in the following sections to the read quality before filtering contaminant, host, and rRNA reads:
-
--   Basic Statistics
--   Per base sequence quality
--   Overrepresented sequences
+***Question: How many total contaminant, host, and rRNA reads were filtered out?***
 
 ### Step 7. Taxonomic Classification
 
@@ -353,25 +365,35 @@ Now that we have putative mRNA transcripts, we can begin to infer the origins of
 
 **Notes**:
 
--   The kaiju commands you would use are given below:
-    -   kaiju
+-   The kaiju command you would is are given below:
+    -   `kaiju -t nodes.dmp -f kaiju_db.fmi -i mouse1_mRNA.fastq -z 4 -o mouse1_classification.tsv`
+-   The command line parameters are:
+    -   `-t`: The heiarchal representation of the taxonomy IDs
+    -   `-f`: The precomputed index for kaiji
+    -   `-i`: The input reads
+    -   `-z`: The number of threads supported on your system
+    -   `-o`: The output file for the kaiju taxonomic classifications
 
 We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Family-level taxa from which we find more than 100 reads which limits the number of spurious classifications.
 
 ```
-X.py
+4_Constrain_Classification.py 
 ```
 
 Then we generate a human readable summary of the classification using Kaiju.
 
 ```
-kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_classification_Summary.tsv -r family
+kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_classification_Summary.txt -r family
 ```
 
 **Notes**:
 
 -   The command line parameters are:
-    -   `-i`: The input fasta or fastq file.
+    -   `-t`: The heiarchal representation of the taxonomy IDs
+    -   `-n`: The taxonomic names corresponding to each taxonomy ID
+    -   `-i`: The kaiju taxonomic classifications
+    -   `-o`: The summary report output file
+    -   `-r`: The taxonomic rank for which the summary will be produced
 
 Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
 
@@ -386,25 +408,24 @@ We can then view this pie chart representation of our dataset using a web browse
 firefox mouse1_classification.html
 ```
 
+***Question: What is the most abundant family in our dataset? What is the most abundant phylum?***
 
 ### Step 8. Assembling reads
 
 Previous studies have shown that assembling reads into larger contigs significantly increases our ability to annotate them to known genes through sequence similarity searches. Here we will apply the SPAdes genome assemblers transcript assembly algorith to our set of putative mRNA reads.
 
 ```
-spades.py --rna mouse1_mRNA.fastq -o mouse1_spades
+spades.py --rna -s mouse1_mRNA.fastq -o mouse1_spades
 mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
 ```
 
 **Notes**:
 
 -   The command line parameters are:
-    -   `--seqType`: type of reads: ( fa, or fq ).
-    -   `--CPU`: number of CPUs to use is 8.
-    -   `--max_memory`: max memory to use by Trinity is 10GB.
-    -   `--min_contig_length`: .
-    -   `--full_cleanup`: remove the temporary folder and results.
--   Trinity assembles reads into contigs which are placed into a file named "trinity\_out\_dir.Trinity.fasta". By entering "less trinity\_out\_dir.Trinity.fasta", you can see the format of contig sequences as follows:
+    -   `--rna`: Uses the mRNA transcript assembly algorithm
+    -   `-s`: The single-end input reads
+    -   `-o`: The output directory
+-   SPAdes assembles reads into contigs which are placed into a file named `mouse1_spades/transcripts.fasta`
 
 In order to extract unassembled reads we need to map all putative mRNA reads to our set of assembled contigs by BWA.
 
@@ -423,7 +444,7 @@ bwa mem -t 4 mouse1_contigs.fasta mouse1_mRNA.fastq > mouse1_contigs.sam
 We then extract unmapped reads into a fastq format file for subsequent processing and generate a mapping table in which each contig is associated with the number of reads used to assemble that contig. This table is useful for determining how many reads map to a contig and is used for determining relative expression (see Steps 6 and 8).
 
 ```
-X.py 
+5_Contig_Map.py 
 ```
 
 ***Question: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***:
@@ -434,33 +455,31 @@ Your numbers may differ from these as the algorithm that BWA uses can alter mapp
 
 Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA, BLAT and DIAMOND. While BWA and BLAT provide high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless they are quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
 
-Since BWA and BLAT utilize nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA and BLAT. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI:.
+Since BWA and BLAT utilize nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA and BLAT. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI.
 
 **Notes**:
 
--   the commands used to build the indexed databases are as follows - you don't need to do these!
+-   The systems used in the workshop do not have enough memory to handle indexing or searching large databases like `microbial_all_cds.fasta` (9GB) and `nr` (>60GB). Please use our precomputed files from the tar file `precomputed_files.tar.gz`.
+-   the commands used to build the indexed databases are as follows (You don't need to do these!)
     -   `bwa index -a microbial_all_cds.fasta`
     -   `samtools faidx microbial_all_cds.fasta`
     -   `makeblastdb -in microbial_all_cds.fasta -dbtype nucl`
     -   `diamond makedb -p 8 --in nr -d nr`
 
--   If you got the error message: "Cannot allocate memory", or the running speed is very slow, especially while doing BWA or DIAMOND mapping, you can skip the steps and use our precomputed files from the tar file `precomputed_files.tar.gz`. DIAMOND in particular may take a long time to run.
-
 **BWA searches against microbial genome database**
 
-for contigs:
+Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the following command:
 
-```
-bwa mem -t 4 microbial_all_cds.fasta mouse1_contigs.fasta > mouse1_contigs_annotation_bwa.sam
-X.py mouse1_contigs_postbwa.fasta
-```
+`tar -xzf precomputed_files.tar.gz mouse1_contigs_annotation_bwa.sam mouse1_unassembled_annotation_bwa.sam`
 
-for unassembled reads:
+-  If you were to run BWA yourself, you would use the following commands:
+   -  `bwa mem -t 4 microbial_all_cds.fasta mouse1_contigs.fasta > mouse1_contigs_annotation_bwa.sam`
+   -  `bwa mem -t 4 microbial_all_cds.fasta mouse1_unassembled.fasta > mouse1_unassembled_annotation_bwa.sam`
 
-```
-bwa mem -t 4 microbial_all_cds.fasta mouse1_unassembled.fasta > mouse1_unassembled_annotation_bwa.sam
-X.py mouse1_unassembled_postbwa.fasta
-```
+Now, using the precomuted output for BWA from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table.
+
+`6_BWA_Gene_Map.py mouse1_contigs_postbwa.fasta`
+
 
 **Notes**:
 
@@ -468,37 +487,21 @@ X.py mouse1_unassembled_postbwa.fasta
 
 **BLAT searches against microbial genome database**
 
-Because the microbial genome database is very large, we can run into "out-of-memory" features(!) when running BLAT. We therefore split the database into two sub-databases, i.e. `microbial_all_cds_1.fasta` and `microbial_all_cds_2.fasta`. After building the corresponding indexed databases, we then issue the following commands:
+Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the following command:
 
-for contigs:
+`tar -xzf precomputed_files.tar.gz mouse1_contigs_annotation_blat.blatout mouse1_unassembled_annotation_blat.blatout `
 
-```
-blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_1.fasta mouse1_contigs_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat_1.blatout
-blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_2.fasta mouse1_contigs_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat_2.blatout
-cat mouse1_contigs_annotation_blat_[1-2].blatout > mouse1_contigs_annotation_blat.blatout
-X.py mouse1_contigs_postblat.fasta
-```
-
-for unassembled reads:
-
-```
-blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_1.fasta mouse1_unassembled_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat_1.blatout
-blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds_2.fasta mouse1_unassembled_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat_2.blatout
-cat mouse1_unassembled_annotation_blat_[1-2].blatout > mouse1_unassembled_annotation_blat.blatout
-X.py mouse1_unassembled_postblat.fasta
-```
+-  If you were to run BLAT yourself, you would use the following commands:
+   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_contigs_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat.blatout`
+   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_unassembled_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat.blatout`
 
 **Notes**:
 
--   The command line parameters are:
-    -   `-noHead`: Suppresses .psl header (so it's just a tab-separated file).
-    -   `-minIdentity`: Sets minimum sequence identity is 90%.
-    -   `-minScore`: Sets minimum score is 65. This is the matches minus the mismatches minus some sort of gap penalty.
-    -   `-fine`: For high-quality mRNAs.
-    -   `-q`: Query type is RNA sequence.
-    -   `-t`: Database type is DNA sequence.
--   The running speed of blat is relatively slow. To save your time, you can skip the blat mapping steps by extracting corresponding blatout files:
-    -   tar -zxf precomputed_files.tar.gz cow\_contigs\_n\_micro\_cds.blatout cow1\_singletons\_n\_micro\_cds.blatout cow2\_singletons\_n\_micro\_cds.blatout
+-   Memory usage for BLAT is relatively high and positively correlated with reference database size. To run BLAT on lower memory machines you can split a large reference database like `microbial_all_cds.fasta` into smaller subsets of the whole (ex. `microbial_all_cds_1.fasta`, `microbial_all_cds_2.fasta`, etc.) then run BLAT on each of the subset databases.
+
+Now, using the precomuted output for BLAT from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and update our read to gene mapping table.
+
+`7_BLAT_Gene_Map.py mouse1_unassembled_postblat.fasta`
 
 **DIAMOND against the non-redundant (NR) protein DB**
 
@@ -524,10 +527,10 @@ tar -zxf precomputed_files.tar.gz mouse1_contigs.diamondout mouse1_unassembled.d
     -   `-o`: Output file name.
     -   `-f`: Output file is in a tabular format.
 
-From the output of these searches, you next need to extract the top matched proteins using the following script and generate the final read to gene/protein mapping tables:
+From the output of these searches, you now need to extract the top matched bacterial proteins using the following script and generate a read to protein mapping table:
 
 ```
-X.py 
+8_Diamond_Protein_Map.py 
 ```
 
 **Notes**
@@ -537,13 +540,13 @@ X.py
 
 ***Question: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
 
--   BWA: Total number of mapped-reads = 11 reads
--   BLAT: Total number of mapped-reads = 609 reads
--   DIAMOND: Total number of mapped-reads = 1255 reads
--   Total number of mapped micro\_cds genes = 390
--   Total number of mapped nr proteins = 966
+-   Total number of mapped-reads with BWA = ### reads
+-   Total number of mapped-reads with BLAT= ### reads
+-   Total number of mapped genes (BWA/BLAT) = ###
+-   Total number of mapped-reads with DIAMOND = ### reads
+-   Total number of mapped proteins (DIAMOND) = ###
 
-Thus of ~6100 reads of putative microbial mRNA origin, we can annotate only ~1800 of them!! This is not uncommon for many microbiome samples without good reference sequences.
+Thus of ~83000 reads of putative microbial mRNA origin, we can annotate only ~##### of them!! This is not uncommon for many microbiome samples without good reference sequences.
 
 ### Step 10. Map identified genes to a "system" dataset for network visualization - here a protein-protein interaction map based on E. coli proteins.
 
