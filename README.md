@@ -365,7 +365,7 @@ Now that we have putative mRNA transcripts, we can begin to infer the origins of
 
 **Notes**:
 
--   The kaiju command you would is are given below:
+-   The kaiju command you would use is given below:
     -   `kaiju -t nodes.dmp -f kaiju_db.fmi -i mouse1_mRNA.fastq -z 4 -o mouse1_classification.tsv`
 -   The command line parameters are:
     -   `-t`: The heiarchal representation of the taxonomy IDs
@@ -374,16 +374,21 @@ Now that we have putative mRNA transcripts, we can begin to infer the origins of
     -   `-z`: The number of threads supported on your system
     -   `-o`: The output file for the kaiju taxonomic classifications
 
-We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Family-level taxa from which we find more than 100 reads which limits the number of spurious classifications.
+We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Family-level taxa which limits the number of spurious classifications.
 
 ```
-4_Constrain_Classification.py 
+4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
 ```
+
+**Notes**:
+
+The argument structure for this script is:
+`4_Constrain_Classification.py <Minimum_Taxonomic_Rank> <kaiju_Classification> <nodes_file> <names_file> <Output_Classifications>`
 
 Then we generate a human readable summary of the classification using Kaiju.
 
 ```
-kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_classification_Summary.txt -r family
+kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Summary.txt -r genus
 ```
 
 **Notes**:
@@ -395,11 +400,13 @@ kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_cla
     -   `-o`: The summary report output file
     -   `-r`: The taxonomic rank for which the summary will be produced
 
+***Question: How many reads did kaiju classify?***
+
 Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
 
 ```
-kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification.tsv -o mouse1_classification_Krona.tsv
-ktImportText -n Bacteria -o mouse1_classification.html mouse1_classification_Krona.tsv
+kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
+ktImportText -o mouse1_classification.html mouse1_classification_Krona.txt
 ```
 
 We can then view this pie chart representation of our dataset using a web browser:
@@ -408,7 +415,8 @@ We can then view this pie chart representation of our dataset using a web browse
 firefox mouse1_classification.html
 ```
 
-***Question: What is the most abundant family in our dataset? What is the most abundant phylum?***
+***Question: What is the most abundant family in our dataset? What is the most abundant phylum?  
+Hint: Try decreasing the `Max depth` value on the top left of the screen and/or double clicking on spcific taxa.***
 
 ### Step 8. Assembling reads
 
@@ -427,6 +435,9 @@ mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
     -   `-o`: The output directory
 -   SPAdes assembles reads into contigs which are placed into a file named `mouse1_spades/transcripts.fasta`
 
+***Question: How many assemblies did SPAdes produce?  
+Hint: try using the command`tail mouse1_contigs.fasta`***
+
 In order to extract unassembled reads we need to map all putative mRNA reads to our set of assembled contigs by BWA.
 
 First, we need to build an index to allow BWA to search against our set of contigs:
@@ -444,8 +455,13 @@ bwa mem -t 4 mouse1_contigs.fasta mouse1_mRNA.fastq > mouse1_contigs.sam
 We then extract unmapped reads into a fastq format file for subsequent processing and generate a mapping table in which each contig is associated with the number of reads used to assemble that contig. This table is useful for determining how many reads map to a contig and is used for determining relative expression (see Steps 6 and 8).
 
 ```
-5_Contig_Map.py 
+5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
 ```
+
+**Notes**:
+
+The argument structure for this script is:
+`5_Contig_Map.py <Reads_Used_In_Alignment> <Output_SAM_From_BWA> <Output_File_For_Unassembed_Reads> <Output_File_For_Contig_Map>`
 
 ***Question: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***:
 
@@ -478,12 +494,15 @@ Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the
 
 Now, using the precomuted output for BWA from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table.
 
-`6_BWA_Gene_Map.py mouse1_contigs_postbwa.fasta`
+`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped_bwa.fasta mouse1_unassembled.fasta mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped_bwa.fasta`
 
 
 **Notes**:
 
 -   Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
+
+The argument structure for this script is:
+`6_BWA_Gene_Map.py <Gene_database> <Contig_Map> <Output_File_For_Gene_Map> <Contigs_File> <Contig_BWA_SAM> <Unmapped_Contigs> <Unassembled_Reads_File> <Unassembled_Reads_BWA_SAM> <Unmapped_Unassembled_Reads>`
 
 **BLAT searches against microbial genome database**
 
@@ -492,8 +511,8 @@ Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the
 `tar -xzf precomputed_files.tar.gz mouse1_contigs_annotation_blat.blatout mouse1_unassembled_annotation_blat.blatout `
 
 -  If you were to run BLAT yourself, you would use the following commands:
-   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_contigs_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat.blatout`
-   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_unassembled_postbwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat.blatout`
+   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_contigs_unmapped_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat.blatout`
+   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_unassembled_unmapped_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat.blatout`
 
 **Notes**:
 
@@ -535,6 +554,7 @@ From the output of these searches, you now need to extract the top matched bacte
 
 **Notes**
 
+-   To avoid having to load and parse through the entire >60GB NCBI nr database on the workshop systems the script above skips the steps that involve fetching data from the NCBI nr database, but they can be easily re-enabled. Use the command `tar -zxf precomputed_files.tar.gz mouse1_proteins.faa mouse1_proteins_map.faa` to extract precomputed output files.
 -   Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
 -   Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit') that derives from a bacteria. As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a seperate issue however! Again, due to the size of the output file and the processing time, we will rely on the use of pre-computed files.
 
