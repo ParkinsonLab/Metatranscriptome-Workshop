@@ -118,7 +118,7 @@ Compare with the previous report to see changes in the following sections:
 
 If you were working with a paired-end dataset, we could identify pairs of sequence reads that overlap and can therefore be merged into a single sequence. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch):
 
-> ```
+```
 Exmaple only, do not run!
 vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastqout mouse_merged_trim.fastq --fastqout_notmerged_fwd mouse1_merged_trim.fastq --fastqout_notmerged_rev mouse2_merged_trim.fastq
 ```
