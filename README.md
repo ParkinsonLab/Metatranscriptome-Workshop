@@ -100,7 +100,7 @@ java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq m
     -   `SLIDINGWINDOW:4:15`: Scan with a window of size 4 for reads with local quality below a score of 15, and trim if found.
     -   `MINLEN:50`: Delete a sequence with a length less than 50.
 
-***Question: How many low quality sequences have been removed?***
+***Question 1: How many low quality sequences have been removed?***
 
 Checking read quality with FastQC:
 
@@ -118,7 +118,8 @@ Compare with the previous report to see changes in the following sections:
 
 If you were working with a paired-end dataset, we could identify pairs of sequence reads that overlap and can therefore be merged into a single sequence. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch):
 
-```
+> ```
+Exmaple only, do not run!
 vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastqout mouse_merged_trim.fastq --fastqout_notmerged_fwd mouse1_merged_trim.fastq --fastqout_notmerged_rev mouse2_merged_trim.fastq
 ```
 
@@ -165,7 +166,7 @@ Compare with the previous reports to see changes in the following sections:
 -   Per base sequence quality
 -   Per sequence quality
 
-***Question: How has the per read sequence quality curve changed?***
+***Question 2: How has the per read sequence quality curve changed?***
 
 ### Step 2. Remove duplicate reads
 
@@ -182,7 +183,7 @@ To significantly reduce the amount of computating time required for identificati
     -   `-o`: The output file containing dereplicated sequences, where a unique representative sequence is used to represent each set of sequences with multiple replicates.
 -   A second output file `mouse1_unique.fastq.clstr` is created which shows exactly which replicated sequences are represented by each unique sequence in the dereplicated file and a third, empty, output file, `mouse1_unique.fastq2.clstr` is also created which is only used for paired-end reads.
 
-***Question: Can you find how many unique reads there are?***
+***Question 3: Can you find how many unique reads there are?***
 
 While the number of replicated reads in this small dataset is relatively low, with larger datasets, this step can reduce file size by as much as 50-80%
 
@@ -218,7 +219,7 @@ samtools fastq -n -f 4 -0 mouse1_univec_bwa.fastq mouse1_univec_bwa.bam
     -   `samtools view`: Converts the .sam output of bwa into .bam for the following steps
     -   `samtools fastq`: Generates fastq outputs for all reads that mapped to the vector contaminant database (`-F 4`) and all reads that did not map to the vector contaminant database (`-f 4`)
 
-***Question: Can you find how many reads BWA mapped to the vector database?***
+***Question 4: Can you find how many reads BWA mapped to the vector database?***
 
 Now we want to perform additional alignments for the reads with BLAT to filter out any remaining reads that align to our vector contamination database. However, BLAT only accepts fasta files so we have to convert our reads from fastq to fasta. This can be done using VSEARCH.
 
@@ -257,7 +258,9 @@ Lastly, we can run a small python script to filter the reads that BLAT does not 
 The argument structure for this script is:
 `1_BLAT_Filter.py <Input_Reads.fq> <BLAT_Output_File> <Unmapped_Reads_Output> <Mapped_Reads_Output>`
 
-Here, BLAT does not identify any additional sequences which align to the vector contaminant database. However, we have found that BLAT often finds some alignments to vector contaminants missed by BWA in large multi-million read datasets.
+Here, BLAT does not identify any additional sequences which align to the vector contaminant database. However, we have found that BLAT is often able find alignments not identified by BWA, particularly when searching against a database consisting of whole genomes.
+
+some alignments to vector contaminants missed by BWA in large multi-million read datasets.
 
 ### Step 4. Remove host reads
 
@@ -294,7 +297,7 @@ blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -
 1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
 ```
 
-***Question: How many reads did BWA and BLAT align to the mouse host sequence database?***
+***Question 5: How many reads did BWA and BLAT align to the mouse host sequence database?***
 
 ***Optional:*** In your own future analyses you can choose to complete steps 3 and 4 simultaneously by combining the vector contamination database and the host sequence database using `cat UniVec_Core mouse_cds.fa > contaminants.fa`. However, doing these steps together makes it difficult to tell how much of your reads came specifically from your host organism.
 
@@ -322,7 +325,7 @@ tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
 From this output file we need to use a script to filter out the rRNA reads:
 
 ```
-2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
+2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
 ```
 
 **Notes**:
@@ -332,7 +335,7 @@ The argument structure for this script is:
 
 Here, we only remove a few thousand reads than map to rRNA, but in some datasets rRNA may represent up to 80% of the sequenced reads.
 
-***Question: How many rRNA sequences were identified? How many reads are now remaining?***
+***Question 6: How many rRNA sequences were identified? How many reads are now remaining?***
 
 
 ### Step 6. Rereplication
@@ -348,20 +351,22 @@ After removing contaminants, host sequences, and rRNA, we need to replace the pr
 The argument structure for this script is:
 `3_Reduplicate.py <Duplicated_Reference_File> <Deduplicated_File> <CDHIT_Cluster_File> <Reduplicated_Output>`
 
-***Question: How many putative mRNA sequences were identified? How many unique mRNA sequences?***
+***Question 7: How many putative mRNA sequences were identified? How many unique mRNA sequences?***
 
 Now that we have filtered vectors, adapters, linkers, primers, host sequences, and rRNA, check read quality with FastQC:
 
 ```
 fastqc mouse1_mRNA.fastq
-firefox mouse1_mRNA_fastgc.html
+firefox mouse1_mRNA_fastqc.html
 ```
 
-***Question: How many total contaminant, host, and rRNA reads were filtered out?***
+***Question 8: How many total contaminant, host, and rRNA reads were filtered out?***
 
 ### Step 7. Taxonomic Classification
 
-Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju] (https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classification in a file called `mouse1_classification.tsv`.
+Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju] (https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classifications, `mouse1_classification.tsv`, in the tar file `precomputed_files.tar.gz`.
+
+`tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp`
 
 **Notes**:
 
@@ -400,7 +405,7 @@ kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mous
     -   `-o`: The summary report output file
     -   `-r`: The taxonomic rank for which the summary will be produced
 
-***Question: How many reads did kaiju classify?***
+***Question 9: How many reads did kaiju classify?***
 
 Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
 
@@ -415,8 +420,10 @@ We can then view this pie chart representation of our dataset using a web browse
 firefox mouse1_classification.html
 ```
 
-***Question: What is the most abundant family in our dataset? What is the most abundant phylum?  
+***Question 10: What is the most abundant family in our dataset? What is the most abundant phylum?  
 Hint: Try decreasing the `Max depth` value on the top left of the screen and/or double clicking on spcific taxa.***
+
+Currently, our use of Kaiju (or similar reference based short read classifiers like Kraken, Clark, and Centrifuge) is limited to getting a quick overview of the composition of our datasets. However, we are currently developing novel methods to utilize data generated by these methods in our later analyses.
 
 ### Step 8. Assembling reads
 
@@ -435,7 +442,7 @@ mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
     -   `-o`: The output directory
 -   SPAdes assembles reads into contigs which are placed into a file named `mouse1_spades/transcripts.fasta`
 
-***Question: How many assemblies did SPAdes produce?  
+***Question 11: How many assemblies did SPAdes produce?  
 Hint: try using the command`tail mouse1_contigs.fasta`***
 
 In order to extract unassembled reads we need to map all putative mRNA reads to our set of assembled contigs by BWA.
@@ -463,30 +470,30 @@ We then extract unmapped reads into a fastq format file for subsequent processin
 The argument structure for this script is:
 `5_Contig_Map.py <Reads_Used_In_Alignment> <Output_SAM_From_BWA> <Output_File_For_Unassembed_Reads> <Output_File_For_Contig_Map>`
 
-***Question: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***:
+***Question 12: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***
 
 Your numbers may differ from these as the algorithm that BWA uses can alter mapping from run to run.
 
 ### Step 9. Annotate reads to known genes/proteins
 
-Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA, BLAT and DIAMOND. While BWA and BLAT provide high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless they are quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
+Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA and DIAMOND. While BWA provides high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless it is quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
 
-Since BWA and BLAT utilize nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA and BLAT. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI.
+Since BWA utilizes nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI.
 
 **Notes**:
 
 -   The systems used in the workshop do not have enough memory to handle indexing or searching large databases like `microbial_all_cds.fasta` (9GB) and `nr` (>60GB). Please use our precomputed files from the tar file `precomputed_files.tar.gz`.
+-   While we only utilize BWA here, it is possible to use BWA followed BLAT for a more thorough search of the `microbial_all_cds.fasta` like we described in Steps 3 and 4. This limits the number of searches that need to be completed against the much larger NCBI nr database.
 -   the commands used to build the indexed databases are as follows (You don't need to do these!)
     -   `bwa index -a microbial_all_cds.fasta`
     -   `samtools faidx microbial_all_cds.fasta`
-    -   `makeblastdb -in microbial_all_cds.fasta -dbtype nucl`
     -   `diamond makedb -p 8 --in nr -d nr`
 
 **BWA searches against microbial genome database**
 
 Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the following command:
 
-`tar -xzf precomputed_files.tar.gz mouse1_contigs_annotation_bwa.sam mouse1_unassembled_annotation_bwa.sam`
+`tar -xzf precomputed_files.tar.gz mouse1_contigs.fastq mouse1_contigs_annotation_bwa.sam mouse1_unassembled_annotation_bwa.sam`
 
 -  If you were to run BWA yourself, you would use the following commands:
    -  `bwa mem -t 4 microbial_all_cds.fasta mouse1_contigs.fasta > mouse1_contigs_annotation_bwa.sam`
@@ -494,33 +501,15 @@ Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the
 
 Now, using the precomuted output for BWA from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table.
 
-`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped_bwa.fasta mouse1_unassembled.fasta mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped_bwa.fasta`
-
+`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fasta mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
 
 **Notes**:
 
 -   Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
+-   To avoid having to load and parse through the entire `microbial_all_cds.fasta` database on the workshop systems the script above skips the steps that involve fetching data from the `microbial_all_cds.fasta` database, but they can be easily re-enabled. Use the command `tar -zxf precomputed_files.tar.gz mouse1_proteins.faa mouse1_genes.faa` to extract precomputed output files.
 
 The argument structure for this script is:
 `6_BWA_Gene_Map.py <Gene_database> <Contig_Map> <Output_File_For_Gene_Map> <Contigs_File> <Contig_BWA_SAM> <Unmapped_Contigs> <Unassembled_Reads_File> <Unassembled_Reads_BWA_SAM> <Unmapped_Unassembled_Reads>`
-
-**BLAT searches against microbial genome database**
-
-Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the following command:
-
-`tar -xzf precomputed_files.tar.gz mouse1_contigs_annotation_blat.blatout mouse1_unassembled_annotation_blat.blatout `
-
--  If you were to run BLAT yourself, you would use the following commands:
-   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_contigs_unmapped_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_contigs_annotation_blat.blatout`
-   -  `blat -noHead -minIdentity=90 -minScore=65 microbial_all_cds.fasta mouse1_unassembled_unmapped_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_unassembled_annotation_blat.blatout`
-
-**Notes**:
-
--   Memory usage for BLAT is relatively high and positively correlated with reference database size. To run BLAT on lower memory machines you can split a large reference database like `microbial_all_cds.fasta` into smaller subsets of the whole (ex. `microbial_all_cds_1.fasta`, `microbial_all_cds_2.fasta`, etc.) then run BLAT on each of the subset databases.
-
-Now, using the precomuted output for BLAT from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and update our read to gene mapping table.
-
-`7_BLAT_Gene_Map.py mouse1_unassembled_postblat.fasta`
 
 **DIAMOND against the non-redundant (NR) protein DB**
 
@@ -534,8 +523,8 @@ tar -zxf precomputed_files.tar.gz mouse1_contigs.diamondout mouse1_unassembled.d
 
 -  If you were to run DIAMOND yourself, you would use the following commands:
    -   `mkdir dmnd_tmp`
-   -   `diamond blastx -p 4 -d nr -q mouse1_contigs_postblat.fasta -o mouse1_contigs.dmdout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
-   -   `diamond blastx -p 4 -d nr -q mouse1_unassembled_postblat.fasta -o mouse1_unassembled.diamondout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
+   -   `diamond blastx -p 4 -d nr -q mouse1_contigs_unmapped.fasta -o mouse1_contigs.dmdout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
+   -   `diamond blastx -p 4 -d nr -q mouse1_unassembled_unmapped.fasta -o mouse1_unassembled.diamondout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
 -   The command line parameters are:
     -   `-p`: Number of threads to use in the search is 4.
     -   `-q`: Input file name.
@@ -549,20 +538,19 @@ tar -zxf precomputed_files.tar.gz mouse1_contigs.diamondout mouse1_unassembled.d
 From the output of these searches, you now need to extract the top matched bacterial proteins using the following script and generate a read to protein mapping table:
 
 ```
-8_Diamond_Protein_Map.py 
+7_Diamond_Protein_Map.py 
 ```
 
 **Notes**
 
--   To avoid having to load and parse through the entire >60GB NCBI nr database on the workshop systems the script above skips the steps that involve fetching data from the NCBI nr database, but they can be easily re-enabled. Use the command `tar -zxf precomputed_files.tar.gz mouse1_proteins.faa mouse1_proteins_map.faa` to extract precomputed output files.
+-   To avoid having to load and parse through the entire >60GB NCBI nr database on the workshop systems the script above skips the steps that involve fetching data from the NCBI nr database, but they can be easily re-enabled. Use the command `tar -zxf precomputed_files.tar.gz mouse1_proteins.faa mouse1_proteins.faa` to extract precomputed output files.
 -   Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
 -   Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit') that derives from a bacteria. As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a seperate issue however! Again, due to the size of the output file and the processing time, we will rely on the use of pre-computed files.
 
-***Question: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
+***Question 13: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
 
 -   Total number of mapped-reads with BWA = ### reads
--   Total number of mapped-reads with BLAT= ### reads
--   Total number of mapped genes (BWA/BLAT) = ###
+-   Total number of mapped genes (BWA) = ###
 -   Total number of mapped-reads with DIAMOND = ### reads
 -   Total number of mapped proteins (DIAMOND) = ###
 
@@ -595,7 +583,7 @@ diamond blastp -p 4 -d EcoliMG1655_std -q mouse1_proteins.fasta -o mouse1_protei
 We then need to generate a mapping file which lists E. coli homolog (we use the E. coli 'b'-number as the sequence classifier) for each of our genes/proteins:
 
 ```
-X.py
+8.py
 ```
 
 ### Step 11. Generate normalized expression values associated with each gene
@@ -605,13 +593,13 @@ We have removed low quality bases/reads, vectors, adaptors, linkers, primers, ho
 First, we identify the taxonomic classification for each of the genes and proteins identified in our BWA, BLAT and DIAMOND searches (NCBI taxon ID, species name and phylum). The resulting classifications should be similar to the taxonomic classifications we generated in Step 7 (Kaiju). Taxonomic classifications of our genes/proteins enables us to identify which groups are contributing which functions to the microbiome:
 
 ```
-X.py
+9.py
 ```
 
 Then for each gene/protein within each classified specie, we calculate a normalized expression value (Reads Per Kilobase of Sequence Mapped - RPKM):
 
 ```
-X.py
+10.py
 ```
 
 **Notes**:
@@ -622,7 +610,7 @@ X.py
 
 -   There are 1874 reads mapping to 1356 microbial genes.
 
-***Question: have a look at this file, what are the most highly expressed genes? Which phylum appears most active?***
+***Question 14: have a look at this file, what are the most highly expressed genes? Which phylum appears most active?***
 
 ### Step 10. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
 
