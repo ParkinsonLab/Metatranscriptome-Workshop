@@ -1,6 +1,6 @@
 # Metatranscriptomics Practical Lab
 
-**This work is licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-sa/3.0/deed.en_US). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
+**This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
 
 Overview
 --------
@@ -40,12 +40,20 @@ mkdir -p ~/metatranscriptomics
 cd ~/metatranscriptomics
 ```
 
+### Python Scripts
+
+We have written a number of scripts to extract and analyse data from the tools you will be using. Download our package for the metatranscriptomics workshop and extract our python scripts.
+
+```
+wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/Extra/precomputed_files.tar.gz
+tar --wildcards -xvf precomputed_files.tar.gz *.py
+```
+
 ### Input files
 
 Our data set consists of 150 bp single-end Illumina reads generated from mouse colon contents. To inspect its contents:
 
 ```
-wget precomputed_files.tar.gz
 tar -xvf precomputed_files.tar.gz mouse1.fastq
 less mouse1.fastq
 ```
@@ -358,7 +366,11 @@ firefox mouse1_mRNA_fastqc.html
 
 Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju] (https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classifications, `mouse1_classification.tsv`, in the tar file `precomputed_files.tar.gz`.
 
-`tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp`
+```
+tar --wildcards -xzf precomputed_files.tar.gz kaiju*
+chmod +x kaiju*
+tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
+```
 
 **Notes**:
 
@@ -385,7 +397,7 @@ The argument structure for this script is:
 Then we generate a human readable summary of the classification using Kaiju.
 
 ```
-kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Summary.txt -r genus
+./kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Summary.txt -r genus
 ```
 
 **Notes**:
@@ -402,7 +414,9 @@ kaijuReport -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mous
 Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
 
 ```
-kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
+./kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
+tar -xzf precomputed_files.tar.gz KronaTools
+sudo KronaTools/install.pl
 ktImportText -o mouse1_classification.html mouse1_classification_Krona.txt
 ```
 
@@ -417,7 +431,7 @@ Hint: Try decreasing the `Max depth` value on the top left of the screen and/or 
 
 ### Step 8. Assembling reads
 
-Previous studies have shown that assembling reads into larger contigs significantly increases our ability to annotate them to known genes through sequence similarity searches. Here we will apply the SPAdes genome assemblers transcript assembly algorith to our set of putative mRNA reads.
+Previous studies have shown that assembling reads into larger contigs significantly increases our ability to annotate them to known genes through sequence similarity searches. Here we will apply the SPAdes genome assemblers' transcript assembly algorithm to our set of putative mRNA reads.
 
 ```
 spades.py --rna -s mouse1_mRNA.fastq -o mouse1_spades
@@ -496,7 +510,7 @@ The argument structure for this script is:
 DIAMOND is a BLAST-like local aligner for mapping translated DNA query sequences against a protein reference database (BLASTX alignment mode). The speedup over BLAST is up to 20,000 on short reads at a typical sensitivity of 90-99% relative to BLAST depending on the data and settings. However, searching time for the nr database is still long (timing scales primarily by size of reference database for small numbers of reads).
 
 -  If you were to run DIAMOND yourself, you would use the following commands:
-   -   `mkdir dmnd_tmp`
+   -   `mkdir -p dmnd_tmp`
    -   `diamond blastx -p 4 -d nr -q mouse1_contigs_unmapped.fasta -o mouse1_contigs.dmdout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
    -   `diamond blastx -p 4 -d nr -q mouse1_unassembled_unmapped.fasta -o mouse1_unassembled.diamondout -f 6 -t dmnd_tmp -k 10 --id 85 --query-cover 65 --min-score 60`
 -   The command line parameters are:
@@ -523,10 +537,10 @@ Because the non-redundant protein database contains entries from many species, i
 
 -   Total number of mapped-reads with BWA = 3356 reads
 -   Total number of mapped genes (BWA) = 1234
--   Total number of mapped-reads with DIAMOND = 31264 reads
+-   Total number of mapped-reads with DIAMOND = 51936 reads
 -   Total number of mapped proteins (DIAMOND) = 21699
 
-Thus of ~83000 reads of putative microbial mRNA origin, we can annotate only ~34620 of them!
+Thus of ~83000 reads of putative microbial mRNA origin, we can annotate ~55000 of them to almost ~23000 genes!
 
 Remember, to extract the precomputed output files for this step:
 
@@ -536,10 +550,10 @@ Remember, to extract the precomputed output files for this step:
 
 To help interpret our metatranscriptomic datasets from a functional perspective, we rely on mapping our data to functional networks such as metabolic pathways and maps of protein complexes. Here we will use the KEGG carbohydrate metabolism pathway.
 
-To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions.
+To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions. Diamond is a relatively coarse and straight forward way to annotate enzyme function by homology. We have chosen to use it here in order to avoid having to introduce additional tools. However, more robust methods for enzymatic function annotation exist in literature, such as our own probability desity based enzyme function annotation tool, [Detect] (https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btq266).
 
 ```
-mkdir dmnd_tmp
+mkdir -p dmnd_tmp
 tar -xzf precomputed_files.tar.gz swiss_db.dmnd swiss_map.tsv
 ```
 
@@ -583,18 +597,11 @@ We have removed low quality bases/reads, vectors, adaptors, linkers, primers, ho
 
 -   The structure of the output file `mouse1_RPKM.txt` is:
     -   `[geneID/proteinID, length, #reads, EC#, Total RPKM, RPKM per phylum]`
-    -   `gi|110832861|ref|NC_008260.1|:414014-415204 1191 1 3.9.3.5 106.98 0 0 45.89 6.86 20.77 7.35 2.3 0 4.63 19.18 0 0`
+    -   `gi|110832861|ref|NC_008260.1|:414014-415204 1191 1 3.9.3.5 106.98 0 0 45.89 6.86 20.77 7.35 2.3 0 4.63`
 
 ***Question 15: have a look at the `mouse1_RPKM.txt` file. What are the most highly expressed genes? Which phylum appears most active?***
 
 ### Step 10. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
-
-
-
-b.	Set the color scheme of each taxonomic category orderly in the Options tab.
-c.	Click Apply.
-7.	To make the visualization better, you might need to change other node’s properties, such as Label Fount Size, Label Position, Fill Color, etc., the location of nodes, and the edge’s properties (Note 5).
-8. 
 
 To visualize our processed microbiome dataset in the context of the carbohydrate metabolism pathways, we use the network visualization tool - Cytoscape together with the enhancedGraphics and KEGGscape plugins. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
 
@@ -605,7 +612,7 @@ First, download the carbohydrate metabolism pathways from KEGG using the followi
 
 ```
 firefox 'www.kegg.jp/kegg-bin/download?entry=ec00010&format=kgml'
-firefox 'www.kegg.jp/kegg-bin/download?entry=ec00500&format=kgml'
+firefox 'www.kegg.jp/kegg-bin/download?entry=ec00020&format=kgml'
 ```
 
 Make sure to select `Save File` and save to your current working directory.
@@ -644,9 +651,11 @@ You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?h
 
 **Notes**:
 
+-   A cytoscape file with node attributes precalculated is provided for your convenience, `tar -xzf precomputed_files.tar.gz Example.cys`, feel free to open it and play with different visualizations and different layouts - compare the circular layouts with the spring embedded layouts for example. If you want to go back to the original layout then you will have to reload the file.
 -   Cytoscape can be tempermental. If you don't see piecharts for the nodes, they appear as blank circles, you can show these manually. Under the 'properties' panel on the left, there is an entry labelled 'Custom Graphics 1'. Double click the empty box on the left (this is for default behaviour) - this will pop up a new window with a choice of 'Images' 'Charts' and 'Gradients' - select 'Charts', choose the chart type you want (pie chart or donut for example) and select the different bacterial taxa by moving them from "Available Columns" to "Selected Columns". Finally click on 'Apply' in bottom right of window (may not be visible until you move the window).
 
-**Questions:**
+**Visualization Questions:**
+
 - Which genes are most highly expressed in these two systems?
 - Which taxa are responsible for most gene expression?
 - Can you identify sub-systems (groups of interacting genes) that display anomalous taxonomic profiles?
