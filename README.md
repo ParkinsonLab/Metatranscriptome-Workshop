@@ -16,9 +16,9 @@ This tutorial will take you through a pipeline for processing metatranscriptomic
 7.  Classify reads to known taxonomic groups and visualize the taxonomic composition of your dataset.
 9.  Assemble the reads into contigs to improve annotation quality.
 10.  Annotate reads to known genes.
-11.  Map identified genes to a "system" dataset for network visualization - here a protein-protein interaction map based on E. coli proteins.
+11.  Map identified genes to the swiss-prot database to identify enzyme function
 12.  Generate normalized expression values associated with each gene.
-13. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
+13. Visualize the results using an KEGG metabolic pathways as a scaffold in Cytoscape.
 
 The whole metatranscriptomic pipeline includes existing bioinformatic tools and a series of Python scripts that handle file format conversion and output parsing. We will go through these steps to illustrate the complexity of the process and the underlying tools and scripts.
 
@@ -31,30 +31,22 @@ Rather than use the entire set of 25 million read, which might take several days
 Preliminaries
 -------------
 
-### Amazon node
-
-Read [these directions](http://bioinformatics-ca.github.io/logging_into_the_Amazon_cloud/) for information on how to log in to your assigned Amazon node.
-
 ### Work directory
 
 Create a new directory that will store all of the files created in this lab.
 
 ```
-rm -rf ~/workspace/module5
-mkdir -p ~/workspace/module5
-cd ~/workspace/module5
-ln -s ~/CourseData/metagenomics/metatranscriptomics/* .
+mkdir -p ~/metatranscriptomics
+cd ~/metatranscriptomics
 ```
-
-**Notes**:
-
--   The `ln -s` command adds symbolic links of all of the files contained in the (read-only) `~/CourseData/metatranscriptomics` directory.
 
 ### Input files
 
-Our data set consists of 150 bp single-end Illumina reads generated from mouse colon contents. To inspect their contents:
+Our data set consists of 150 bp single-end Illumina reads generated from mouse colon contents. To inspect its contents:
 
 ```
+wget precomputed_files.tar.gz
+tar -xvf precomputed_files.tar.gz mouse1.fastq
 less mouse1.fastq
 ```
 
@@ -540,125 +532,121 @@ Remember, to extract the precomputed output files for this step:
 
 `tar -xzf precomputed_files.tar.gz mouse1_genes_map.tsv mouse1_genes.fasta mouse1_proteins.fasta`
 
-### Step 10. Enzyme Function Annotation of Genes/Proteins
+### Step 10. Enzyme Function Annotation
 
 To help interpret our metatranscriptomic datasets from a functional perspective, we rely on mapping our data to functional networks such as metabolic pathways and maps of protein complexes. Here we will use the KEGG carbohydrate metabolism pathway.
 
 To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions.
 
-`tar -xzf precomputed_files.tar.gz swiss_db.dmnd swiss_map.tsv`
+```
+mkdir dmnd_tmp
+tar -xzf precomputed_files.tar.gz swiss_db.dmnd swiss_map.tsv
+```
 
 For microbial *genes* identified through our BWA searches:
 
 ```
-diamond blastx -p 4 -d swiss_db -q mouse1_genes.fasta -o mouse1_genes.diamondout -f 6 -t dmnd_tmp -e 10 -k 10
+diamond blastx -p 4 -d swiss_db -q mouse1_genes.fasta -o mouse1_genes.diamondout -f 6 -t dmnd_tmp -e 10 -k 1
 ```
 
 For *proteins* identified through our DIAMOND searches:
 
 ```
-diamond blastp -p 4 -d swiss_db -q mouse1_proteins.fasta -o mouse1_proteins.diamondout -f 6 -t dmnd_tmp -e 10 -k 10
+diamond blastp -p 4 -d swiss_db -q mouse1_proteins.fasta -o mouse1_proteins.diamondout -f 6 -t dmnd_tmp -e 10 -k 1
 ```
 
 We then need to generate a mapping file which lists our gene/protein and the enzyme commission (EC) number, describing enzymatic funtion, which corresponds to it:
 
 ```
-8_Gene_EC_Map.py
+8_Gene_EC_Map.py swiss_map.tsv mouse1_genes.diamondout mouse1_proteins.diamondout mouse1_EC_map.tsv
 ```
+
+The argument structure for this script is:
+
+`8_Gene_EC_Map.py <SWISS-PROT_EC_Mappings> <Diamond_Output_For_Genes> <Diamond_Output_For_Proteins> <Output_EC_Mapping_File>`
+
+***Question 14: How many unique enzyme functions were identified in our dataset?***
 
 ### Step 11. Generate normalized expression values associated with each gene
 
 We have removed low quality bases/reads, vectors, adaptors, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-9_RPKM.py
+9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
 ```
 
 **Notes**:
 
--   The final output file is named `mouse1_RPKM.txt` and has the following format:
-    -   `[geneID/proteinID, length, #reads, taxonID, specie, phylum, RPKM, PPI]`
-    -   `gi|110832861|ref|NC_008260.1|:414014-415204 1191 1 393595 Alcanivorax borkumensis SK2 gammaproteobacteria 450.4456 b3339`
+-   The argument structure for this script is:
 
--   There are 1874 reads mapping to 1356 microbial genes.
+    -   `9_RPKM.py <nodes_file> <kaiju_Classification> <Gene_Mapping_File> <EC_Mapping_File> <RPKM_Output> <Cytoscope_Attributes_Output>`
 
-***Question 14: have a look at this file, what are the most highly expressed genes? Which phylum appears most active?***
+-   The structure of the output file `mouse1_RPKM.txt` is:
+    -   `[geneID/proteinID, length, #reads, EC#, Total RPKM, RPKM per phylum]`
+    -   `gi|110832861|ref|NC_008260.1|:414014-415204 1191 1 3.9.3.5 106.98 0 0 45.89 6.86 20.77 7.35 2.3 0 4.63 19.18 0 0`
+
+***Question 15: have a look at the `mouse1_RPKM.txt` file. What are the most highly expressed genes? Which phylum appears most active?***
 
 ### Step 10. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
 
-To visualize our processed microbiome dataset in the context of the E. coli PPI network, we use the network visualization tool - Cytoscape together with the enhancedGraphics plugin. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
 
-**Open a Cytoscape session file (.cys)**
 
--   Select `File` -> `Open`
--   Select the session file and click `Open`
+b.	Set the color scheme of each taxonomic category orderly in the Options tab.
+c.	Click Apply.
+7.	To make the visualization better, you might need to change other node’s properties, such as Label Fount Size, Label Position, Fill Color, etc., the location of nodes, and the edge’s properties (Note 5).
+8. 
+
+To visualize our processed microbiome dataset in the context of the carbohydrate metabolism pathways, we use the network visualization tool - Cytoscape together with the enhancedGraphics and KEGGscape plugins. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
+
+
+**Download the metabolic pathway**
+
+First, download the carbohydrate metabolism pathways from KEGG using the following commands:
+
+```
+firefox 'www.kegg.jp/kegg-bin/download?entry=ec00010&format=kgml'
+firefox 'www.kegg.jp/kegg-bin/download?entry=ec00500&format=kgml'
+```
+
+Make sure to select `Save File` and save to your current working directory.
+
+You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?htext=br08901.keg) which can also be imported into Cytoscape by selecting the `Download KGML` option on the top of the page for each pathway.
+
+**Install the Cytoscape plugins**
+
+-   Select `Apps` -> `App Manager`
+-   Search for `enhancedGraphics`
+-   Select `enhancedGraphics` in the middle column then click `Install` in the bottom right
+-   Search for `KEGGScape`
+-   Select `KEGGScape` in the middle column then click `Install` in the bottom right
+
+**Import an XML from KEGG into Cytoscape**
+
+-   Select `File` -> `Import` -> `Network` -> `File...`
+-   Select the XML file, `ec00010.xml` or `ec00500.xml` and click `Open`
+-   Check `Import pathway details from KEGG Database` box then select `OK`
 
 **Loading a node attribute text file (.txt) - this will map attributes to nodes in your network which you can subsequently visualize**
 
--   Select `File` -&gt; `Import` -&gt; `Table` -&gt; `File`
--   Select the node file and click `Open`
--   Select Key Column for network (shared name),
--   Select Show Mapping Opteins -&gt; Select the primary key column in table and click OK
+-   Select `File` -> `Import` -> `Table` -> `File...`
+-   Select the `mouse1_cytoscape.txt` file and click `Open`
+-   Change the `Key Column for network` from `shared name` to `KEGG_NODE_LABEL`
+-   Click OK
 
-**Changing node properties - this changes the visual properties of the nodes - here size**
+**Visualizing your node attributes**
 
--   Select Style on Control Panel -&gt; Select Node tag at the bottom -&gt; Select Size -&gt; Select Column as RPKM -&gt; Select Mapping Type as Continuous Mapping -&gt; Double click on the Current Mapping to open Continuous Mapping Editor for Node Size -&gt; Select your preferred values
-
-**Changing edge properties - this changes visual properties of edges connecting nodes - here width of lines**
-
--   Select Style on Control Panel -&gt; Select Edge tag at the bottom -&gt; Select Width -&gt; Select Column as Scores -&gt; Select Mapping Type as Continuous Mapping -&gt; Double click on the Current Mapping to open Continuous Mapping Editor for Edge Width -&gt; Select your preferred values
-
-**Installing Apps - Cytoscape features the ability to load in 3rd party applications that provide additional functionality**
-
--   Select Apps —&gt; select App Manager -&gt; Type in enhancedGraphics in the Search box -&gt; Select enhancedGraphics and click Install
-
-**Basic Network Navigation**
-
--   Use the zooming buttons located on the toolbar to zoom in and out of the interaction network shown in the current network display.
--   Using the scroll wheel of your mouse, you can zoom in by scrolling up and zoom out by scrolling downwards.
--   Select nodes on the current network display, you will see the nodes' attributes from the Table Panel (Node Table). Same for edges.
-
-Here we will skip the steps of generating the node attribute file to map onto the E. coli PPI network - [cow_PPI.nodes.txt](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Cow_PPI.nodes.txt) from "cow\_table\_RPKM\_all.txt", however for your information the steps involve:
-
-```
-11_Node_Attributes.py
-```
--   predefining taxonomic categories (here we use the following 12 phylum categories: archaea, protozoan, bacteria, actinobacteria, bacteroidetes, gammaproteobacteria, deltaproteobacteria, betaproteobacteria, alphaproteobacteria, clostridiales, leuconostocaceae, lactobacillaceae, but you could define these categories to fit your microbiome).
--   calculate RPKM values of each ecoli protein, for every phylum category, by adding RPKM values of the protein's mapped genes/proteins.
--   generate a node attribute file which is a tab-delimited table with a format as follows:
-    -   the first line is the header - you could use:
-
-```
-ecoli_protein    b#    RPKM    piechart        archaea protozoan       bacteria        
-actinobacteria  bacteroidetes   gammaproteobacteria     deltaproteobacteria     betaproteobacteria
-alphaproteobacteria     clostridiales   leuconostocaceae        lactobacillaceae
-```
-
--   subsequent lines then use the format, with the final numbers being the RPKM associated with each taxon:
-
-```
-tuf    b3339   106.98  piechart: attributelist="archaea,protozoan,bacteria,actinobacteria,bacteroidetes,
-gammaproteobacteria,deltaproteobacteria,betaproteobacteria,alphaproteobacteria,clostridiales,
-leuconostocaceae,lactobacillaceae" colorlist="#FFA500,#C0C0C0,#EDF252,#0000FF,#FF00FF,#2C94DE,#ED4734,
-#00FFFF,#FFCCFF,#34C400,#A52A2A,#663366" showlabels=false  0   0   45.89   6.86    
-20.77  7.35    2.3 0   4.63    19.18   0   0
-```
-
-Once the node attribute file has been generated, we provide two network files (one based on cell wall biogenesis proteins and one based on transporters) onto which these attributes can be mapped: [ecoli_PPI_cellwall.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_cellwall.cys) or [ecoli_PPI_transporter.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_transporter.cys). While we recommend using the precomputed cytoscape files listed below - you could use these attribute files by downloading them from your module5 directory onto your laptop via scp or winscp. Once downloaded these files can be opened using Cytoscape installed in your local computer. To import node attributes (note you need to have the Ecoli PPI cytoscape file loaded first!):
-
-```
-1) select File -> Import -> Table -> File, select "cow_PPI.nodes.txt" from your working folder,
-click OK from the prompting window. 
-2) from Control Panel, select Style -> Properties -> Paint -> Custom Paint 1 -> Custom Graphics 1, 
-3) click Custom Graphics 1, select piechart for Column, and select Passthrough Mapping for Mapping Type. 
-```
+-   In the left `Control Panel` select the `Style` tab
+-   Check the `Lock node width and height` box
+-   Click the left-most box by the `Size` panel and change the default node size to 20.0
+-   Click the blank box immidiately to the right of the box you clicked to change the default size, change the `Column` field to `RPKM` and the `Mapping Type` field to `Continuous Mapping`
+-   Click the left-most box by the `Image/Chart 1` panel, switch to the `Charts` tab, Click the doughnut ring icon, and press the `>>` "add all" button between the two column fields before clicking apply
+-   To improve the visualization you can modify colour properties under `Image/Chart 1` -> `Charts` -> `Options`, or modify other properties such as Label Font Size, Label Position, Fill Color, Node location, and edge properties
 
 **Notes**:
 
--   Two cytoscape files with node attributes precalculated are provided for your convenience the first focuses on proteins involved in cell wall biogenesis, the second focuses on proteins involved in transport activities, [ecoli_PPI_cellwall_cow.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_cellwall_cow.cys) and [ecoli_PPI_transporter_cow.cys](https://github.com/bioinformatics-ca/bioinformatics-ca.github.io/raw/master/2016_workshops/metagenomics/Ecoli_PPI_transporter_cow.cys), open them up and have a play with different visualizations and different layouts - compare the circular layouts with the spring embedded layouts for example. If you want to go back to the original layout (created manually - yes each node was selected and dragged into position to group e.g. proteins involved in the same transport activity!) then you will have to reload the file
 -   Cytoscape can be tempermental. If you don't see piecharts for the nodes, they appear as blank circles, you can show these manually. Under the 'properties' panel on the left, there is an entry labelled 'Custom Graphics 1'. Double click the empty box on the left (this is for default behaviour) - this will pop up a new window with a choice of 'Images' 'Charts' and 'Gradients' - select 'Charts', choose the chart type you want (pie chart or donut for example) and select the different bacterial taxa by moving them from "Available Columns" to "Selected Columns". Finally click on 'Apply' in bottom right of window (may not be visible until you move the window).
 
-Questions:
+**Questions:**
 - Which genes are most highly expressed in these two systems?
 - Which taxa are responsible for most gene expression?
 - Can you identify sub-systems (groups of interacting genes) that display anomalous taxonomic profiles?
