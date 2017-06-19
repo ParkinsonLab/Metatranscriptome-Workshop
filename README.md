@@ -472,13 +472,13 @@ The argument structure for this script is:
 
 ***Question 12: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***
 
-Your numbers may differ from these as the algorithm that BWA uses can alter mapping from run to run.
-
 ### Step 9. Annotate reads to known genes/proteins
 
 Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA and DIAMOND. While BWA provides high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless it is quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
 
 Since BWA utilizes nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI.
+
+#ALL PRECOMPUTED
 
 **Notes**:
 
@@ -493,7 +493,7 @@ Since BWA utilizes nucleotide searches, we rely on a [microbial genome database]
 
 Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the following command:
 
-`tar -xzf precomputed_files.tar.gz mouse1_contigs.fastq mouse1_contigs_annotation_bwa.sam mouse1_unassembled_annotation_bwa.sam`
+`tar -xzf precomputed_files.tar.gz mouse1_contigs.fastq mouse1_unassembled.fastq mouse1_contigs_annotation_bwa.sam mouse1_unassembled_annotation_bwa.sam`
 
 -  If you were to run BWA yourself, you would use the following commands:
    -  `bwa mem -t 4 microbial_all_cds.fasta mouse1_contigs.fasta > mouse1_contigs_annotation_bwa.sam`
@@ -501,7 +501,7 @@ Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the
 
 Now, using the precomuted output for BWA from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table.
 
-`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fasta mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
+`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
 
 **Notes**:
 
@@ -538,19 +538,23 @@ tar -zxf precomputed_files.tar.gz mouse1_contigs.diamondout mouse1_unassembled.d
 From the output of these searches, you now need to extract the top matched bacterial proteins using the following script and generate a read to protein mapping table:
 
 ```
-7_Diamond_Protein_Map.py 
+7_Diamond_Protein_Map.py nr 
 ```
 
 **Notes**
 
--   To avoid having to load and parse through the entire >60GB NCBI nr database on the workshop systems the script above skips the steps that involve fetching data from the NCBI nr database, but they can be easily re-enabled. Use the command `tar -zxf precomputed_files.tar.gz mouse1_proteins.faa mouse1_proteins.faa` to extract precomputed output files.
+-   To avoid having to load and parse through the entire >60GB NCBI nr database on the workshop systems the script above skips the steps that involve fetching data from the NCBI nr database, but they can be easily re-enabled.
 -   Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
--   Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit') that derives from a bacteria. As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a seperate issue however! Again, due to the size of the output file and the processing time, we will rely on the use of pre-computed files.
+-   Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit'). As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a seperate issue however!
+
+Use the following command to extract precomputed output files.:
+
+`tar -zxf precomputed_files.tar.gz mouse1_proteins.faa`
 
 ***Question 13: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
 
--   Total number of mapped-reads with BWA = ### reads
--   Total number of mapped genes (BWA) = ###
+-   Total number of mapped-reads with BWA = 3425 reads
+-   Total number of mapped genes (BWA) = 1229
 -   Total number of mapped-reads with DIAMOND = ### reads
 -   Total number of mapped proteins (DIAMOND) = ###
 
@@ -590,7 +594,7 @@ We then need to generate a mapping file which lists E. coli homolog (we use the 
 
 We have removed low quality bases/reads, vectors, adaptors, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome. 
 
-First, we identify the taxonomic classification for each of the genes and proteins identified in our BWA, BLAT and DIAMOND searches (NCBI taxon ID, species name and phylum). The resulting classifications should be similar to the taxonomic classifications we generated in Step 7 (Kaiju). Taxonomic classifications of our genes/proteins enables us to identify which groups are contributing which functions to the microbiome:
+First, we identify the taxonomic classification for each of the genes and proteins identified in our BWA, BLAT and DIAMOND searches (NCBI taxon ID, species name and phylum). The resulting classifications are formatted in the same manner as the taxonomic classifications we generated in Step 7 (Kaiju) and can be directly compared to them. Taxonomic classifications of our genes/proteins enables us to identify which groups are contributing which functions to the microbiome:
 
 ```
 9.py
