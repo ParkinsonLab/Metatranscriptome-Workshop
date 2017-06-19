@@ -379,7 +379,7 @@ Now that we have putative mRNA transcripts, we can begin to infer the origins of
     -   `-z`: The number of threads supported on your system
     -   `-o`: The output file for the kaiju taxonomic classifications
 
-We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Family-level taxa which limits the number of spurious classifications.
+We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Genus-level taxa which limits the number of spurious classifications.
 
 ```
 4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
@@ -501,7 +501,7 @@ Extract the precomuted outputs for BWA from `precomputed_files.tar.gz` using the
 
 Now, using the precomuted output for BWA from `precomputed_files.tar.gz`, run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table.
 
-`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
+`6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
 
 **Notes**:
 
@@ -509,7 +509,7 @@ Now, using the precomuted output for BWA from `precomputed_files.tar.gz`, run th
 -   To avoid having to load and parse through the entire `microbial_all_cds.fasta` database on the workshop systems the script above skips the steps that involve fetching data from the `microbial_all_cds.fasta` database, but they can be easily re-enabled. Use the command `tar -zxf precomputed_files.tar.gz mouse1_proteins.faa mouse1_genes.faa` to extract precomputed output files.
 
 The argument structure for this script is:
-`6_BWA_Gene_Map.py <Gene_database> <Contig_Map> <Output_File_For_Gene_Map> <Contigs_File> <Contig_BWA_SAM> <Unmapped_Contigs> <Unassembled_Reads_File> <Unassembled_Reads_BWA_SAM> <Unmapped_Unassembled_Reads>`
+`6_BWA_Gene_Map.py <Gene_database> <Contig_Map> <Output_File_For_Gene_Map> <Output_File_For_Gene_sequences> <Contigs_File> <Contig_BWA_SAM> <Unmapped_Contigs> <Unassembled_Reads_File> <Unassembled_Reads_BWA_SAM> <Unmapped_Unassembled_Reads>`
 
 **DIAMOND against the non-redundant (NR) protein DB**
 
@@ -538,7 +538,7 @@ tar -zxf precomputed_files.tar.gz mouse1_contigs.diamondout mouse1_unassembled.d
 From the output of these searches, you now need to extract the top matched bacterial proteins using the following script and generate a read to protein mapping table:
 
 ```
-7_Diamond_Protein_Map.py nr 
+7_Diamond_Protein_Map.py nr mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_proteins.fasta mouse1_contigs_unmapped.fasta mouse1_contigs.dmdout mouse1_contigs_unannotated.fasta mouse1_unassembled_unmapped.fastq mouse1_unassembled.dmdout mouse1_unassembled_unannotated.fasta
 ```
 
 **Notes**
@@ -553,8 +553,8 @@ Use the following command to extract precomputed output files.:
 
 ***Question 13: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
 
--   Total number of mapped-reads with BWA = 3425 reads
--   Total number of mapped genes (BWA) = 1229
+-   Total number of mapped-reads with BWA = 3356 reads
+-   Total number of mapped genes (BWA) = 1234
 -   Total number of mapped-reads with DIAMOND = ### reads
 -   Total number of mapped proteins (DIAMOND) = ###
 
