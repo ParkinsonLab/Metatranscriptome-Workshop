@@ -619,6 +619,12 @@ Make sure to select `Save File` and save to your current working directory.
 
 You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?htext=br08901.keg) which can also be imported into Cytoscape by selecting the `Download KGML` option on the top of the page for each pathway.
 
+**Start Cytoscape**
+
+```
+/opt/Cytoscape_v3.5.1/cytoscape.sh
+```
+
 **Install the Cytoscape plugins**
 
 -   Select `Apps` -> `App Manager`
@@ -645,7 +651,7 @@ You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?h
 -   In the left `Control Panel` select the `Style` tab
 -   Check the `Lock node width and height` box
 -   Click the left-most box by the `Size` panel and change the default node size to 20.0
--   Click the blank box immidiately to the right of the box you clicked to change the default size, change the `Column` field to `RPKM` and the `Mapping Type` field to `Continuous Mapping`
+-   Click the blank box immediately to the right of the box you clicked to change the default size, change the `Column` field to `RPKM` and the `Mapping Type` field to `Continuous Mapping`
 -   Click the left-most box by the `Image/Chart 1` panel, switch to the `Charts` tab, Click the doughnut ring icon, and press the `>>` "add all" button between the two column fields before clicking apply
 -   To improve the visualization you can modify colour properties under `Image/Chart 1` -> `Charts` -> `Options`, or modify other properties such as Label Font Size, Label Position, Fill Color, Node location, and edge properties
 
