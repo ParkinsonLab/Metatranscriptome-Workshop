@@ -586,7 +586,7 @@ The argument structure for this script is:
 We have removed low quality bases/reads, vectors, adaptors, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
+./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscape.txt
 ```
 
 **Notes**:
