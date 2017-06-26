@@ -2,12 +2,13 @@
 
 **This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
 
-Overview
---------
+**This tutorial was produced by Mobolaji Adeolu (adeolum@mcmaster.ca)**
+
+## Overview
 
 This tutorial will take you through a pipeline for processing metatranscriptomic data. The pipeline, developed by the Parkinson lab, consists of various steps which are as follows:
 
-1.  Remove adaptor sequences, which are added during library preparation and sequencing steps, and trim low quality bases and sequencing reads.
+1.  Remove adapter sequences, which are added during library preparation and sequencing steps, and trim low quality bases and sequencing reads.
 2.  Remove duplicate reads to reduce processing time for following steps.
 3.  Remove vector contamination (reads derived from cloning vectors, spike-ins, and primers).
 4.  Remove host reads (if exploring a microbiome in which the host is an issue).
@@ -28,8 +29,7 @@ To illustrate the process we are going to use sequence reads generated from the 
 
 Rather than use the entire set of 25 million read, which might take several days to process on a desktop, the tutorial will take you through processing a subset of 100,000 reads.
 
-Preliminaries
--------------
+## Preliminaries
 
 ### Work directory
 
@@ -42,7 +42,7 @@ cd ~/metatranscriptomics
 
 ### Python Scripts
 
-We have written a number of scripts to extract and analyse data from the tools you will be using. Download our package for the metatranscriptomics workshop and extract our python scripts.
+We have written a number of scripts to extract and analyze data from the tools you will be using. Download our package for the metatranscriptomics workshop and extract our python scripts.
 
 ```
 wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/Extra/precomputed_files.tar.gz
@@ -75,12 +75,11 @@ To open the HTML report file use the following command `firefox mouse1_fastqc.ht
 -   Basic Statistics: Basic information of the mouse RNA-seq data, e.g. the total number of reads, read length, GC content.
 -   Per base sequence quality: An overview of the range of quality values across all bases at each position.
 -   Per Base Sequence Content: A plot showing nucleotide bias across sequence length.
--   Adapter Content: Provides information on the level of adaptor contamination in your sequence sample.
+-   Adapter Content: Provides information on the level of adapter contamination in your sequence sample.
 
-Processing the Reads
---------------------
+## Processing the Reads
 
-### Step 1. Remove adaptor sequences and trim low quality sequences. 
+### Step 1. Remove adapter sequences and trim low quality sequences. 
 
 Trimmomatic can rapidly identify and trim adaptor sequences, as well as identify and remove low quality sequence data - you can download and install on your own computer from their project [website](http://www.usadellab.org/cms/?page=trimmomatic). 
 
@@ -94,7 +93,7 @@ java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq m
 -   `ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapter` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
 -   The command line parameters are:
     -   `SE`: The input data are single-end reads.
-    -   `ILLUMINACLIP:Adapters:2:30:10`: remove the adaptors.
+    -   `ILLUMINACLIP:Adapters:2:30:10`: remove the adapters.
     -   `LEADING:3`: Trims bases at the beginning of a read if they are below quality score of 3.
     -   `TRAILING:3`: Trims bases at the end of a read if they are below quality score of 3.
     -   `SLIDINGWINDOW:4:15`: Scan with a window of size 4 for reads with local quality below a score of 15, and trim if found.
@@ -189,7 +188,7 @@ While the number of replicated reads in this small dataset is relatively low, wi
 
 ### Step 3. Remove vector contamination
 
-To identify and filter reads from sources of vector, adapter, linker, and primer contamination we the Burrows Wheeler aligner (BWA) and the BLAST-like alignment tool (BLAT) to search against a database of cow sequences. As a reference database for identifying contaminating vector and adaptor sequences we rely on the UniVec\_Core dataset which is a fasta file of known vectors and common sequencing adaptors, linkers, and PCR Primers derived from the NCBI Univec Database. Please download it into your working directory first.
+To identify and filter reads from sources of vector, adapter, linker, and primer contamination we the Burrows Wheeler aligner (BWA) and the BLAST-like alignment tool (BLAT) to search against a database of cow sequences. As a reference database for identifying contaminating vector and adapter sequences we rely on the UniVec\_Core dataset which is a fasta file of known vectors and common sequencing adapters, linkers, and PCR Primers derived from the NCBI Univec Database. Please download it into your working directory first.
 
 ```
 wget ftp://ftp.ncbi.nih.gov/pub/UniVec/UniVec_Core
@@ -377,7 +376,7 @@ tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
 -   The kaiju command you would use is given below:
     -   `kaiju -t nodes.dmp -f kaiju_db.fmi -i mouse1_mRNA.fastq -z 4 -o mouse1_classification.tsv`
 -   The command line parameters are:
-    -   `-t`: The heiarchal representation of the taxonomy IDs
+    -   `-t`: The hierarchal representation of the taxonomy IDs
     -   `-f`: The precomputed index for kaiji
     -   `-i`: The input reads
     -   `-z`: The number of threads supported on your system
@@ -403,7 +402,7 @@ Then we generate a human readable summary of the classification using Kaiju.
 **Notes**:
 
 -   The command line parameters are:
-    -   `-t`: The heiarchal representation of the taxonomy IDs
+    -   `-t`: The hierarchal representation of the taxonomy IDs
     -   `-n`: The taxonomic names corresponding to each taxonomy ID
     -   `-i`: The kaiju taxonomic classifications
     -   `-o`: The summary report output file
@@ -417,7 +416,7 @@ Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a 
 ./kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
 tar -xzf precomputed_files.tar.gz KronaTools
 sudo KronaTools/install.pl
-./KronaTools/scripts/ImportText.pl -o mouse1_classification.html mouse1_classification_Krona.txt
+ktImportText -o mouse1_classification.html mouse1_classification_Krona.txt
 ```
 
 We can then view this pie chart representation of our dataset using a web browser:
@@ -531,7 +530,7 @@ The argument structure for this script is:
 
 -  `7_Diamond_Protein_Map.py <Protein_database> <Contig_Map> <Gene_Map> <Output_File_For_Protein_sequences> <Unmapped_Contigs_File> <Contig_Diamond_Output> <Output_For_Unannotated_Contigs> <Unmapped_ Unassembled_Reads_File> <Unassembled_Reads_Diamond_Output> <Output_For_Unannotated_Unassembled_Reads>`
 
-Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit'). As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a seperate issue however!
+Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit'). As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a separate issue however!
 
 ***Question 13: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
 
@@ -550,7 +549,7 @@ Remember, to extract the precomputed output files for this step:
 
 To help interpret our metatranscriptomic datasets from a functional perspective, we rely on mapping our data to functional networks such as metabolic pathways and maps of protein complexes. Here we will use the KEGG carbohydrate metabolism pathway.
 
-To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions. Diamond is a relatively coarse and straight forward way to annotate enzyme function by homology. We have chosen to use it here in order to avoid having to introduce additional tools. However, more robust methods for enzymatic function annotation exist in literature, such as our own probability desity based enzyme function annotation tool, [Detect] (https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btq266).
+To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions. Diamond is a relatively coarse and straight forward way to annotate enzyme function by homology. We have chosen to use it here in order to avoid having to introduce additional tools. However, more robust methods for enzymatic function annotation exist in literature, such as our own probability density based enzyme function annotation tool, [Detect] (https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btq266).
 
 ```
 mkdir -p dmnd_tmp
@@ -569,7 +568,7 @@ For *proteins* identified through our DIAMOND searches:
 diamond blastp -p 4 -d swiss_db -q mouse1_proteins.fasta -o mouse1_proteins.diamondout -f 6 -t dmnd_tmp -e 10 -k 1
 ```
 
-We then need to generate a mapping file which lists our gene/protein and the enzyme commission (EC) number, describing enzymatic funtion, which corresponds to it:
+We then need to generate a mapping file which lists our gene/protein and the enzyme commission (EC) number, describing enzymatic function, which corresponds to it:
 
 ```
 ./8_Gene_EC_Map.py swiss_map.tsv mouse1_genes.diamondout mouse1_proteins.diamondout mouse1_EC_map.tsv
@@ -583,10 +582,10 @@ The argument structure for this script is:
 
 ### Step 11. Generate normalized expression values associated with each gene
 
-We have removed low quality bases/reads, vectors, adaptors, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
+We have removed low quality bases/reads, vectors, adapters, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscape.txt
+./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
 ```
 
 **Notes**:
@@ -618,12 +617,6 @@ firefox 'www.kegg.jp/kegg-bin/download?entry=ec00020&format=kgml'
 Make sure to select `Save File` and save to your current working directory.
 
 You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?htext=br08901.keg) which can also be imported into Cytoscape by selecting the `Download KGML` option on the top of the page for each pathway.
-
-**Start Cytoscape**
-
-```
-/opt/Cytoscape_v3.5.1/cytoscape.sh
-```
 
 **Install the Cytoscape plugins**
 
@@ -658,7 +651,7 @@ You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?h
 **Notes**:
 
 -   A cytoscape file with node attributes precalculated is provided for your convenience, `tar -xzf precomputed_files.tar.gz Example.cys`, feel free to open it and play with different visualizations and different layouts - compare the circular layouts with the spring embedded layouts for example. If you want to go back to the original layout then you will have to reload the file.
--   Cytoscape can be tempermental. If you don't see piecharts for the nodes, they appear as blank circles, you can show these manually. Under the 'properties' panel on the left, there is an entry labelled 'Custom Graphics 1'. Double click the empty box on the left (this is for default behaviour) - this will pop up a new window with a choice of 'Images' 'Charts' and 'Gradients' - select 'Charts', choose the chart type you want (pie chart or donut for example) and select the different bacterial taxa by moving them from "Available Columns" to "Selected Columns". Finally click on 'Apply' in bottom right of window (may not be visible until you move the window).
+-   Cytoscape can be temperamental. If you don't see pie charts for the nodes, they appear as blank circles, you can show these manually. Under the 'properties' panel on the left, there is an entry labeled 'Custom Graphics 1'. Double click the empty box on the left (this is for default behavior) - this will pop up a new window with a choice of 'Images' 'Charts' and 'Gradients' - select 'Charts', choose the chart type you want (pie chart or donut for example) and select the different bacterial taxa by moving them from "Available Columns" to "Selected Columns". Finally click on 'Apply' in bottom right of window (may not be visible until you move the window).
 
 **Visualization Questions:**
 
