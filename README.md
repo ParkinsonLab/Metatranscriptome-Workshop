@@ -377,7 +377,7 @@ tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
     -   `kaiju -t nodes.dmp -f kaiju_db.fmi -i mouse1_mRNA.fastq -z 4 -o mouse1_classification.tsv`
 -   The command line parameters are:
     -   `-t`: The hierarchal representation of the taxonomy IDs
-    -   `-f`: The precomputed index for kaiji
+    -   `-f`: The precomputed index for kaiju
     -   `-i`: The input reads
     -   `-z`: The number of threads supported on your system
     -   `-o`: The output file for the kaiju taxonomic classifications
@@ -611,7 +611,7 @@ First, download the carbohydrate metabolism pathways from KEGG using the followi
 
 ```
 firefox 'www.kegg.jp/kegg-bin/download?entry=ec00010&format=kgml'
-firefox 'www.kegg.jp/kegg-bin/download?entry=ec00020&format=kgml'
+firefox 'www.kegg.jp/kegg-bin/download?entry=ec00500&format=kgml'
 ```
 
 Make sure to select `Save File` and save to your current working directory.
@@ -645,7 +645,8 @@ You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?h
 -   Check the `Lock node width and height` box
 -   Click the left-most box by the `Size` panel and change the default node size to 20.0
 -   Click the blank box immediately to the right of the box you clicked to change the default size, change the `Column` field to `RPKM` and the `Mapping Type` field to `Continuous Mapping`
--   Click the left-most box by the `Image/Chart 1` panel, switch to the `Charts` tab, Click the doughnut ring icon, and press the `>>` "add all" button between the two column fields before clicking apply
+-   Click the left-most box by the `Image/Chart 1` panel, switch to the `Charts` tab, Click the doughnut ring icon, and press the `>>` "add all" button between the two column fields before clicking apply (make sure to remove overall RPKM from the fields that are added to the doughnut ring)
+-   If you do not see the `Image/Chart 1` panel, select `Properties` -> `Paint` -> `Custom Paint 1` -> `Image/Chart 1` from the to left corner of the control panel
 -   To improve the visualization you can modify colour properties under `Image/Chart 1` -> `Charts` -> `Options`, or modify other properties such as Label Font Size, Label Position, Fill Color, Node location, and edge properties
 
 **Notes**:
