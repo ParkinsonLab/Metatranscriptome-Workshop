@@ -416,7 +416,7 @@ Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a 
 ./kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
 tar -xzf precomputed_files.tar.gz KronaTools
 sudo KronaTools/install.pl
-ktImportText -o mouse1_classification.html mouse1_classification_Krona.txt
+KronaTools/scripts/ImportText.pl -o mouse1_classification.html mouse1_classification_Krona.txt
 ```
 
 We can then view this pie chart representation of our dataset using a web browser:
