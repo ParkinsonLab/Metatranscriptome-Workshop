@@ -19,7 +19,7 @@ This tutorial will take you through a pipeline for processing metatranscriptomic
 10.  Annotate reads to known genes.
 11.  Map identified genes to the swiss-prot database to identify enzyme function
 12.  Generate normalized expression values associated with each gene.
-13. Visualize the results using an KEGG metabolic pathways as a scaffold in Cytoscape.
+13. Visualize the results using KEGG metabolic pathways as scaffolds in Cytoscape.
 
 The whole metatranscriptomic pipeline includes existing bioinformatic tools and a series of Python scripts that handle file format conversion and output parsing. We will go through these steps to illustrate the complexity of the process and the underlying tools and scripts.
 
@@ -600,7 +600,7 @@ We have removed low quality bases/reads, vectors, adapters, linkers, primers, ho
 
 ***Question 15: have a look at the `mouse1_RPKM.txt` file. What are the most highly expressed genes? Which phylum appears most active?***
 
-### Step 10. Visualize the results using an E. coli map of protein-protein interactions as a scaffold in Cytoscape.
+### Step 10. Visualize the results using a KEGG Pathway as a scaffold in Cytoscape.
 
 To visualize our processed microbiome dataset in the context of the carbohydrate metabolism pathways, we use the network visualization tool - Cytoscape together with the enhancedGraphics and KEGGscape plugins. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
 
@@ -610,11 +610,9 @@ To visualize our processed microbiome dataset in the context of the carbohydrate
 First, download the carbohydrate metabolism pathways from KEGG using the following commands:
 
 ```
-firefox 'www.kegg.jp/kegg-bin/download?entry=ec00010&format=kgml'
-firefox 'www.kegg.jp/kegg-bin/download?entry=ec00500&format=kgml'
+wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/EC/ec00010.xml
+wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/EC/ec00500.xml
 ```
-
-Make sure to select `Save File` and save to your current working directory.
 
 You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?htext=br08901.keg) which can also be imported into Cytoscape by selecting the `Download KGML` option on the top of the page for each pathway.
 
