@@ -54,7 +54,8 @@ tar --wildcards -xvf precomputed_files.tar.gz *.py
 Our data set consists of 150 bp single-end Illumina reads generated from mouse colon contents. To inspect its contents:
 
 ```
-tar -xvf precomputed_files.tar.gz mouse1.fastq
+tar -xvf precomputed_files.tar.gz precomputed_files/mouse1.fastq
+mv precomputed_files/mouse1.fastq ./
 less mouse1.fastq
 ```
 
