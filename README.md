@@ -134,6 +134,7 @@ vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastq
 If you want to see the distribution of merged read lengths you can use fastqc to examine the read properties:
 
 ```
+Do Not Run!
 fastqc mouse_merged_trim.fastq
 firefox mouse_merged_trim_fastqc.html
 ```
@@ -250,7 +251,7 @@ blat -noHead -minIdentity=90 -minScore=65  UniVec_Core mouse1_univec_bwa.fasta -
 Lastly, we can run a small python script to filter the reads that BLAT does not confidently align to any sequences from our vector contamination database.
 
 ```
-./1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
+./precomputed_files/1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
 ```
 
 **Notes**:
@@ -294,7 +295,7 @@ Finally, we use BLAT to perform additional alignments for the reads against our 
 ```
 vsearch --fastq_filter mouse1_mouse_bwa.fastq --fastaout mouse1_mouse_bwa.fasta
 blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_mouse.blatout
-./1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
+./precomputed_files/1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
 ```
 
 ***Question 5: How many reads did BWA and BLAT align to the mouse host sequence database?***
@@ -306,7 +307,8 @@ blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -
 rRNA genes tend to be highly expressed in all samples and must therefore be screened out to avoid lengthy downstream processing times for the assembly and annotation steps. You could use sequence similarity tools such as BWA or BLAST for this step, but we find [Infernal] (http://infernal.janelia.org/), albeit slower, is more sensitive as it relies on a database of covariance models (CMs) describing rRNA sequence profiles based on the Rfam database. Due to the reliance on CMs, Infernal, can take as much as 4 hours for ~100,000 reads on a single core. So we will skip this step and use a precomputed file, `mouse1_rRNA.infernalout`, from the tar file `precomputed_files.tar.gz`.
 
 ``` 
-tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
+tar -xzf precomputed_files.tar.gz precomputed_files/mouse1_rRNA.infernalout
+mv precomputed_files/mouse1_rRNA.infernalout ./
 ```
 
 **Notes**:
@@ -325,7 +327,7 @@ tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
 From this output file we need to use a script to filter out the rRNA reads:
 
 ```
-./2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
+./precomputed_files/2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
 ```
 
 **Notes**:
@@ -343,7 +345,7 @@ Here, we only remove a few thousand reads than map to rRNA, but in some datasets
 After removing contaminants, host sequences, and rRNA, we need to replace the previously removed replicate reads back in our data set.
 
 ```
-./3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
+./precomputed_files/3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
 ```
 
 **Notes**:
@@ -367,9 +369,9 @@ firefox mouse1_mRNA_fastqc.html
 Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju] (https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classifications, `mouse1_classification.tsv`, in the tar file `precomputed_files.tar.gz`.
 
 ```
-tar --wildcards -xzf precomputed_files.tar.gz kaiju*
+tar --wildcards -xzf precomputed_files.tar.gz precomputed_files/kaiju* --strip-components=1
 chmod +x kaiju*
-tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
+tar -xzf precomputed_files.tar.gz precomputed_files/mouse1_classification.tsv precomputed_files/nodes.dmp precomputed_files/names.dmp --strip-components=1
 ```
 
 **Notes**:
@@ -386,7 +388,7 @@ tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
 We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Genus-level taxa which limits the number of spurious classifications.
 
 ```
-./4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
+./precomputed_files/4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
 ```
 
 **Notes**:
