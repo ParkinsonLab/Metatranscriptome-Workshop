@@ -417,7 +417,7 @@ Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a 
 
 ```
 ./kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
-tar -xzf precomputed_files.tar.gz KronaTools
+tar -xzf precomputed_files.tar.gz precomputed_files/KronaTools --strip-components=1
 sudo KronaTools/install.pl
 KronaTools/scripts/ImportText.pl -o mouse1_classification.html mouse1_classification_Krona.txt
 ```
@@ -468,7 +468,7 @@ bwa mem -t 4 mouse1_contigs.fasta mouse1_mRNA.fastq > mouse1_contigs.sam
 We then extract unmapped reads into a fastq format file for subsequent processing and generate a mapping table in which each contig is associated with the number of reads used to assemble that contig. This table is useful for determining how many reads map to a contig and is used for determining relative expression (see Steps 6 and 8).
 
 ```
-./5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
+./precomputed_files/5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
 ```
 
 **Notes**:
@@ -501,7 +501,7 @@ Since BWA utilizes nucleotide searches, we rely on a [microbial genome database]
 
 Then you would run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table. Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
 
--  `./6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
+-  `./precomputed_files/6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
 
 The argument structure for this script is:
 
