@@ -1,4 +1,5 @@
 # Metatranscriptomics Practical Lab
+# Metatranscriptomics Practical Lab
 
 **This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
 
@@ -24,7 +25,7 @@ This tutorial will take you through a pipeline for processing metatranscriptomic
 The whole metatranscriptomic pipeline includes existing bioinformatic tools and a series of Python scripts that handle file format conversion and output parsing. We will go through these steps to illustrate the complexity of the process and the underlying tools and scripts.
 
 New, faster, and/or more accurate tools are being developed all the time, and it is worth bearing in mind that any pipelines need to be flexible to incorporate these tools as they get adopted as standards by the community. For example, over the past two years, our lab has transitioned from cross\_match to Trimmomatic and from BLAST to DIAMOND.
-
+Note:  This workshop was designed for use with DIAMOND v0.826.  Newer versions of DIAMOND will be incompatible with the pre-compiled database files we have made as part of this exercise.  
 To illustrate the process we are going to use sequence reads generated from the contents of the colon of a mouse. These are 150 bp single-end reads. Paired-end reads can also be used, and are often preferred because they can improve annotation quality when there is enough overlap in the read pairs to improve the effective average read length. Working with paired-end data involves an additional data processing step (merging of overlapping reads) produces more files during data processing (files for merged/singleton reads, forward reads, and reverse reads), but the structure of a pipeline for paired-end data is similar to the pipeline described here and can be readily adapted.
 
 Rather than use the entire set of 25 million read, which might take several days to process on a desktop, the tutorial will take you through processing a subset of 100,000 reads.
