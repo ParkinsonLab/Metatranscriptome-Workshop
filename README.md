@@ -1,5 +1,4 @@
 # Metatranscriptomics Practical Lab
-# Metatranscriptomics Practical Lab
 
 **This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/). This means that you are able to copy, share and modify the work, as long as the result is distributed under the same license.**
 
