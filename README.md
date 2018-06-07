@@ -37,17 +37,24 @@ Rather than use the entire set of 25 million read, which might take several days
 Create a new directory that will store all of the files created in this lab.
 
 ```
-mkdir -p ~/metatranscriptomics
-cd ~/metatranscriptomics
+mkdir -p ./metatranscriptomics
+cd ./metatranscriptomics
 ```
 
 ### Python Scripts
 
-We have written a number of scripts to extract and analyze data from the tools you will be using. Download our package for the metatranscriptomics workshop and extract our python scripts.
+We have written a number of scripts to extract and analyze data from the tools you will be using. Copy our package for the metatranscriptomics workshop and extract our python scripts.
 
 ```
-wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/Extra/precomputed_files.tar.gz
+cp /home/ubuntu/CourseData/metagenomics/metatranscriptomics/precomputed_files.tar.gz ./
 tar --wildcards -xvf precomputed_files.tar.gz *.py
+```
+
+You'll also need a slightly different version of samtools for some of the following steps that the version installed on your Amazon server. You can get it with the following command:
+
+```
+wget https://www.dropbox.com/s/pafuqti6y3knp2q/samtools
+chmod +x samtools
 ```
 
 ### Input files
@@ -71,7 +78,7 @@ fastqc mouse1.fastq
 
 The FastQC report is generated in a HTML file, `mouse1_fastqc.html`. You'll also find a zip file which includes data files used to generate the report.
 
-To open the HTML report file use the following command `firefox mouse1_fastqc.html` then you can go through the report and find the following information:
+Open the HTML report file, then you can go through the report and find the following information:
 
 -   Basic Statistics: Basic information of the mouse RNA-seq data, e.g. the total number of reads, read length, GC content.
 -   Per base sequence quality: An overview of the range of quality values across all bases at each position.
@@ -106,7 +113,6 @@ Checking read quality with FastQC:
 
 ```
 fastqc mouse1_trim.fastq
-firefox mouse1_trim_fastqc.html
 ```
 
 Compare with the previous report to see changes in the following sections:
@@ -135,7 +141,6 @@ If you want to see the distribution of merged read lengths you can use fastqc to
 
 ```
 fastqc mouse_merged_trim.fastq
-firefox mouse_merged_trim_fastqc.html
 ```
 
 **Read quality filtering**
@@ -157,7 +162,6 @@ Checking read quality with FastQC:
 
 ```
 fastqc mouse1_qual.fastq
-firefox mouse1_qual_fastqc.html
 ```
 
 Compare with the previous reports to see changes in the following sections:
@@ -173,7 +177,7 @@ Compare with the previous reports to see changes in the following sections:
 To significantly reduce the amount of computating time required for identification and filtering of rRNA reads, we perform a dereplication step to remove duplicated reads using the software tool CD-HIT which can be obtained from this [website](https://github.com/weizhongli/cdhit).
 
 ```
-/usr/local/cd-hit-v4.6.8/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
+/usr/local/cdhit-4.6.8/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
 ```
 
 **Notes**:
@@ -199,7 +203,7 @@ Now we must generate an index for these sequences for BWA and BLAT using the fol
 
 ```
 bwa index -a bwtsw UniVec_Core
-samtools faidx UniVec_Core
+./samtools faidx UniVec_Core
 makeblastdb -in UniVec_Core -dbtype nucl
 ```
 
@@ -207,9 +211,9 @@ Next we can perform alignments for the reads with BWA and filter out any reads t
 
 ```
 bwa mem -t 4 UniVec_Core mouse1_unique.fastq > mouse1_univec_bwa.sam
-samtools view -bS mouse1_univec_bwa.sam > mouse1_univec_bwa.bam
-samtools fastq -n -F 4 -0 mouse1_univec_bwa_contaminats.fastq mouse1_univec_bwa.bam
-samtools fastq -n -f 4 -0 mouse1_univec_bwa.fastq mouse1_univec_bwa.bam
+./samtools view -bS mouse1_univec_bwa.sam > mouse1_univec_bwa.bam
+./samtools fastq -n -F 4 -0 mouse1_univec_bwa_contaminats.fastq mouse1_univec_bwa.bam
+./samtools fastq -n -f 4 -0 mouse1_univec_bwa.fastq mouse1_univec_bwa.bam
 ```
 
 **Notes**:
@@ -250,7 +254,7 @@ blat -noHead -minIdentity=90 -minScore=65  UniVec_Core mouse1_univec_bwa.fasta -
 Lastly, we can run a small python script to filter the reads that BLAT does not confidently align to any sequences from our vector contamination database.
 
 ```
-./1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
+/home/ubuntu/.conda/envs/spa/bin/python ./1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
 ```
 
 **Notes**:
@@ -276,7 +280,7 @@ Then we repeat the steps above used to generate an index for these sequences for
 
 ```
 bwa index -a bwtsw mouse_cds.fa
-samtools faidx mouse_cds.fa
+./samtools faidx mouse_cds.fa
 makeblastdb -in mouse_cds.fa -dbtype nucl
 ```
 
@@ -284,9 +288,9 @@ Now we align and filter out any reads that align to our host sequence database u
 
 ```
 bwa mem -t 4 mouse_cds.fa mouse1_univec_blat.fastq > mouse1_mouse_bwa.sam
-samtools view -bS mouse1_mouse_bwa.sam > mouse1_mouse_bwa.bam
-samtools fastq -n -F 4 -0 mouse1_mouse_bwa_contaminats.fastq mouse1_mouse_bwa.bam
-samtools fastq -n -f 4 -0 mouse1_mouse_bwa.fastq mouse1_mouse_bwa.bam
+./samtools view -bS mouse1_mouse_bwa.sam > mouse1_mouse_bwa.bam
+./samtools fastq -n -F 4 -0 mouse1_mouse_bwa_contaminats.fastq mouse1_mouse_bwa.bam
+./samtools fastq -n -f 4 -0 mouse1_mouse_bwa.fastq mouse1_mouse_bwa.bam
 ```
 
 Finally, we use BLAT to perform additional alignments for the reads against our host sequence database.
@@ -294,7 +298,7 @@ Finally, we use BLAT to perform additional alignments for the reads against our 
 ```
 vsearch --fastq_filter mouse1_mouse_bwa.fastq --fastaout mouse1_mouse_bwa.fasta
 blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_mouse.blatout
-./1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
+/home/ubuntu/.conda/envs/spa/bin/python ./1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
 ```
 
 ***Question 5: How many reads did BWA and BLAT align to the mouse host sequence database?***
@@ -303,7 +307,7 @@ blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -
 
 ### Step 5. Remove abundant rRNA sequences
 
-rRNA genes tend to be highly expressed in all samples and must therefore be screened out to avoid lengthy downstream processing times for the assembly and annotation steps. You could use sequence similarity tools such as BWA or BLAST for this step, but we find [Infernal] (http://infernal.janelia.org/), albeit slower, is more sensitive as it relies on a database of covariance models (CMs) describing rRNA sequence profiles based on the Rfam database. Due to the reliance on CMs, Infernal, can take as much as 4 hours for ~100,000 reads on a single core. So we will skip this step and use a precomputed file, `mouse1_rRNA.infernalout`, from the tar file `precomputed_files.tar.gz`.
+rRNA genes tend to be highly expressed in all samples and must therefore be screened out to avoid lengthy downstream processing times for the assembly and annotation steps. You could use sequence similarity tools such as BWA or BLAST for this step, but we find [Infernal](http://infernal.janelia.org/), albeit slower, is more sensitive as it relies on a database of covariance models (CMs) describing rRNA sequence profiles based on the Rfam database. Due to the reliance on CMs, Infernal, can take as much as 4 hours for ~100,000 reads on a single core. So we will skip this step and use a precomputed file, `mouse1_rRNA.infernalout`, from the tar file `precomputed_files.tar.gz`.
 
 ``` 
 tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
@@ -325,7 +329,7 @@ tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
 From this output file we need to use a script to filter out the rRNA reads:
 
 ```
-./2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
+/home/ubuntu/.conda/envs/spa/bin/python ./2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
 ```
 
 **Notes**:
@@ -343,7 +347,7 @@ Here, we only remove a few thousand reads than map to rRNA, but in some datasets
 After removing contaminants, host sequences, and rRNA, we need to replace the previously removed replicate reads back in our data set.
 
 ```
-./3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
+/home/ubuntu/.conda/envs/spa/bin/python ./3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
 ```
 
 **Notes**:
@@ -357,14 +361,13 @@ Now that we have filtered vectors, adapters, linkers, primers, host sequences, a
 
 ```
 fastqc mouse1_mRNA.fastq
-firefox mouse1_mRNA_fastqc.html
 ```
 
 ***Question 8: How many total contaminant, host, and rRNA reads were filtered out?***
 
 ### Step 7. Taxonomic Classification
 
-Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju] (https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classifications, `mouse1_classification.tsv`, in the tar file `precomputed_files.tar.gz`.
+Now that we have putative mRNA transcripts, we can begin to infer the origins of our mRNA reads. Firstly, we will attempt to use a reference based short read classifier to infer the taxonomic orgin of our reads. Here we will use [Kaiju](https://github.com/bioinformatics-centre/kaiju) to generate taxonomic classifications for our reads based on a reference database. Kaiju can classify prokaryotic reads at speeds of millions of reads per minute using the proGenomes database on a system with less than 16GB of RAM (~13GB). Using the entire NCBI nr database as a reference takes ~43GB. Similarly fast classification tools require >100GB of RAM to classify reads against large databases. However, Kaiju still takes too much memory for the systems in the workshop so we have precompiled the classifications, `mouse1_classification.tsv`, in the tar file `precomputed_files.tar.gz`.
 
 ```
 tar --wildcards -xzf precomputed_files.tar.gz kaiju*
@@ -386,7 +389,7 @@ tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
 We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Genus-level taxa which limits the number of spurious classifications.
 
 ```
-./4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
+/home/ubuntu/.conda/envs/spa/bin/python ./4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
 ```
 
 **Notes**:
@@ -411,19 +414,19 @@ Then we generate a human readable summary of the classification using Kaiju.
 
 ***Question 9: How many reads did kaiju classify?***
 
-Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
+Lastly, we will use [Krona](https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
 
 ```
 ./kaiju2krona -t nodes.dmp -n names.dmp -i mouse1_classification_genus.tsv -o mouse1_classification_Krona.txt
 tar -xzf precomputed_files.tar.gz KronaTools
-sudo KronaTools/install.pl
-KronaTools/scripts/ImportText.pl -o mouse1_classification.html mouse1_classification_Krona.txt
+KronaTools/install.pl --prefix ./
+./KronaTools/scripts/ImportText.pl -o mouse1_classification.html mouse1_classification_Krona.txt
 ```
 
 We can then view this pie chart representation of our dataset using a web browser:
 
 ```
-firefox mouse1_classification.html
+mouse1_classification.html
 ```
 
 ***Question 10: What is the most abundant family in our dataset? What is the most abundant phylum?  
@@ -466,7 +469,7 @@ bwa mem -t 4 mouse1_contigs.fasta mouse1_mRNA.fastq > mouse1_contigs.sam
 We then extract unmapped reads into a fastq format file for subsequent processing and generate a mapping table in which each contig is associated with the number of reads used to assemble that contig. This table is useful for determining how many reads map to a contig and is used for determining relative expression (see Steps 6 and 8).
 
 ```
-./5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
+/home/ubuntu/.conda/envs/spa/bin/python ./5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
 ```
 
 **Notes**:
@@ -480,7 +483,7 @@ The argument structure for this script is:
 
 Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA and DIAMOND. While BWA provides high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless it is quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
 
-Since BWA utilizes nucleotide searches, we rely on a [microbial genome database] (ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA. For DIAMOND searches we use the [Non-Redundant (NR) protein database] (ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI.
+Since BWA utilizes nucleotide searches, we rely on a [microbial genome database](ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_refseq/Bacteria/all.ffn.tar.gz) that we obtained from the NCBI which contains 5231 ffn files. We then merge all 5231 ffn files into one fasta file `microbial_all_cds.fasta` and build indexes for this database to allow searching via BWA. For DIAMOND searches we use the [Non-Redundant (NR) protein database](ftp://ftp.ncbi.nih.gov/blast/db/FASTA/nr.gz) also from NCBI.
 
 **Notes**:
 
@@ -497,17 +500,17 @@ Since BWA utilizes nucleotide searches, we rely on a [microbial genome database]
    -  `bwa mem -t 4 microbial_all_cds.fasta mouse1_contigs.fasta > mouse1_contigs_annotation_bwa.sam`
    -  `bwa mem -t 4 microbial_all_cds.fasta mouse1_unassembled.fasta > mouse1_unassembled_annotation_bwa.sam`
 
-Then you would run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table. Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
+-  Then you would run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table. Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
 
--  `./6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
+   -  `/home/ubuntu/.conda/envs/spa/bin/python ./6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
 
-The argument structure for this script is:
+-  The argument structure for this script is:
 
--  `6_BWA_Gene_Map.py <Gene_database> <Contig_Map> <Output_File_For_Gene_Map> <Output_File_For_Gene_sequences> <Contigs_File> <Contig_BWA_SAM> <Unmapped_Contigs> <Unassembled_Reads_File> <Unassembled_Reads_BWA_SAM> <Unmapped_Unassembled_Reads>`
+   -  `6_BWA_Gene_Map.py <Gene_database> <Contig_Map> <Output_File_For_Gene_Map> <Output_File_For_Gene_sequences> <Contigs_File> <Contig_BWA_SAM> <Unmapped_Contigs> <Unassembled_Reads_File> <Unassembled_Reads_BWA_SAM> <Unmapped_Unassembled_Reads>`
 
 **DIAMOND against the non-redundant (NR) protein DB**
 
-DIAMOND is a BLAST-like local aligner for mapping translated DNA query sequences against a protein reference database (BLASTX alignment mode). The speedup over BLAST is up to 20,000 on short reads at a typical sensitivity of 90-99% relative to BLAST depending on the data and settings. However, searching time for the nr database is still long (timing scales primarily by size of reference database for small numbers of reads).
+-  DIAMOND is a BLAST-like local aligner for mapping translated DNA query sequences against a protein reference database (BLASTX alignment mode). The speedup over BLAST is up to 20,000 on short reads at a typical sensitivity of 90-99% relative to BLAST depending on the data and settings. However, searching time for the nr database is still long (timing scales primarily by size of reference database for small numbers of reads).
 
 -  If you were to run DIAMOND yourself, you would use the following commands:
    -   `mkdir -p dmnd_tmp`
@@ -523,15 +526,15 @@ DIAMOND is a BLAST-like local aligner for mapping translated DNA query sequences
     -   `-o`: Output file name.
     -   `-f`: Output file is in a tabular format.
 
-From the output of these searches, you would need to extract the top matched proteins using the script below. Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
+-  From the output of these searches, you would need to extract the top matched proteins using the script below. Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
 
--  `./7_Diamond_Protein_Map.py nr mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_proteins.fasta mouse1_contigs_unmapped.fasta mouse1_contigs.dmdout mouse1_contigs_unannotated.fasta mouse1_unassembled_unmapped.fasta mouse1_unassembled.dmdout mouse1_unassembled_unannotated.fasta`
+   -  `/home/ubuntu/.conda/envs/spa/bin/python ./7_Diamond_Protein_Map.py nr mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_proteins.fasta mouse1_contigs_unmapped.fasta mouse1_contigs.dmdout mouse1_contigs_unannotated.fasta mouse1_unassembled_unmapped.fasta mouse1_unassembled.dmdout mouse1_unassembled_unannotated.fasta`
 
-The argument structure for this script is:
+-  The argument structure for this script is:
 
--  `7_Diamond_Protein_Map.py <Protein_database> <Contig_Map> <Gene_Map> <Output_File_For_Protein_sequences> <Unmapped_Contigs_File> <Contig_Diamond_Output> <Output_For_Unannotated_Contigs> <Unmapped_ Unassembled_Reads_File> <Unassembled_Reads_Diamond_Output> <Output_For_Unannotated_Unassembled_Reads>`
+   -  `7_Diamond_Protein_Map.py <Protein_database> <Contig_Map> <Gene_Map> <Output_File_For_Protein_sequences> <Unmapped_Contigs_File> <Contig_Diamond_Output> <Output_For_Unannotated_Contigs> <Unmapped_ Unassembled_Reads_File> <Unassembled_Reads_Diamond_Output> <Output_For_Unannotated_Unassembled_Reads>`
 
-Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit'). As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a separate issue however!
+-  Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit'). As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a separate issue however!
 
 ***Question 13: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
 
@@ -540,7 +543,7 @@ Because the non-redundant protein database contains entries from many species, i
 -   Total number of mapped-reads with DIAMOND = 51936 reads
 -   Total number of mapped proteins (DIAMOND) = 21699
 
-Thus of ~83000 reads of putative microbial mRNA origin, we can annotate ~55000 of them to almost ~23000 genes!
+Thus of ~83 000 reads of putative microbial mRNA origin, we can annotate ~55 000 of them to almost ~23 000 genes!
 
 Remember, to extract the precomputed output files for this step:
 
@@ -550,7 +553,7 @@ Remember, to extract the precomputed output files for this step:
 
 To help interpret our metatranscriptomic datasets from a functional perspective, we rely on mapping our data to functional networks such as metabolic pathways and maps of protein complexes. Here we will use the KEGG carbohydrate metabolism pathway.
 
-To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions. Diamond is a relatively coarse and straight forward way to annotate enzyme function by homology. We have chosen to use it here in order to avoid having to introduce additional tools. However, more robust methods for enzymatic function annotation exist in literature, such as our own probability density based enzyme function annotation tool, [Detect] (https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btq266).
+To begin, we need to first match our annotated genes the enzymes in the KEGG pathway. To do this, we will use Diamond to identify homologs of our genes/proteins from the SWISS-PROT database that have assigned enzyme functions. Diamond is a relatively coarse and straight forward way to annotate enzyme function by homology. We have chosen to use it here in order to avoid having to introduce additional tools. However, more robust methods for enzymatic function annotation exist in literature, such as our own probability density based enzyme function annotation tool, [Detect](https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btq266).
 
 ```
 mkdir -p dmnd_tmp
@@ -572,7 +575,7 @@ diamond blastp -p 4 -d swiss_db -q mouse1_proteins.fasta -o mouse1_proteins.diam
 We then need to generate a mapping file which lists our gene/protein and the enzyme commission (EC) number, describing enzymatic function, which corresponds to it:
 
 ```
-./8_Gene_EC_Map.py swiss_map.tsv mouse1_genes.diamondout mouse1_proteins.diamondout mouse1_EC_map.tsv
+/home/ubuntu/.conda/envs/spa/bin/python ./8_Gene_EC_Map.py swiss_map.tsv mouse1_genes.diamondout mouse1_proteins.diamondout mouse1_EC_map.tsv
 ```
 
 The argument structure for this script is:
@@ -586,7 +589,7 @@ The argument structure for this script is:
 We have removed low quality bases/reads, vectors, adapters, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
+/home/ubuntu/.conda/envs/spa/bin/python ./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
 ```
 
 **Notes**:
@@ -615,7 +618,7 @@ wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/
 wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/EC/ec00500.xml
 ```
 
-You can find other [pathways on KEGG] (http://www.genome.jp/kegg-bin/get_htext?htext=br08901.keg) which can also be imported into Cytoscape by selecting the `Download KGML` option on the top of the page for each pathway.
+You can find other [pathways on KEGG](http://www.genome.jp/kegg-bin/get_htext?htext=br08901.keg) which can also be imported into Cytoscape by selecting the `Download KGML` option on the top of the page for each pathway.
 
 **Install the Cytoscape plugins**
 
