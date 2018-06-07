@@ -603,7 +603,7 @@ We have removed low quality bases/reads, vectors, adapters, linkers, primers, ho
 
 ***Question 15: have a look at the `mouse1_RPKM.txt` file. What are the most highly expressed genes? Which phylum appears most active?***
 
-### Step 10. Visualize the results using a KEGG Pathway as a scaffold in Cytoscape.
+### Step 12. Visualize the results using a KEGG Pathway as a scaffold in Cytoscape.
 
 To visualize our processed microbiome dataset in the context of the carbohydrate metabolism pathways, we use the network visualization tool - Cytoscape together with the enhancedGraphics and KEGGscape plugins. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
 
