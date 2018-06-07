@@ -253,7 +253,7 @@ blat -noHead -minIdentity=90 -minScore=65  UniVec_Core mouse1_univec_bwa.fasta -
 Lastly, we can run a small python script to filter the reads that BLAT does not confidently align to any sequences from our vector contamination database.
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
+python2 ./1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
 ```
 
 **Notes**:
@@ -297,7 +297,7 @@ Finally, we use BLAT to perform additional alignments for the reads against our 
 ```
 vsearch --fastq_filter mouse1_mouse_bwa.fastq --fastaout mouse1_mouse_bwa.fasta
 blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -fine -q=rna -t=dna -out=blast8 mouse1_mouse.blatout
-/home/ubuntu/.conda/envs/spa/bin/python ./1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
+python2 ./1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
 ```
 
 ***Question 5: How many reads did BWA and BLAT align to the mouse host sequence database?***
@@ -328,7 +328,7 @@ tar -xzf precomputed_files.tar.gz mouse1_rRNA.infernalout
 From this output file we need to use a script to filter out the rRNA reads:
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
+python2 ./2_Infernal_Filter.py mouse1_mouse_blat.fastq mouse1_rRNA.infernalout mouse1_unique_mRNA.fastq mouse1_unique_rRNA.fastq
 ```
 
 **Notes**:
@@ -346,7 +346,7 @@ Here, we only remove a few thousand reads than map to rRNA, but in some datasets
 After removing contaminants, host sequences, and rRNA, we need to replace the previously removed replicate reads back in our data set.
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
+python2 ./3_Reduplicate.py mouse1_qual.fastq mouse1_unique_mRNA.fastq mouse1_unique.fastq.clstr mouse1_mRNA.fastq
 ```
 
 **Notes**:
@@ -388,7 +388,7 @@ tar -xzf precomputed_files.tar.gz mouse1_classification.tsv nodes.dmp names.dmp
 We can then take the classified reads and perform supplemental analyses. Firstly, we'll restrict the specificity of the classifications to Genus-level taxa which limits the number of spurious classifications.
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
+python2 ./4_Constrain_Classification.py genus mouse1_classification.tsv nodes.dmp names.dmp mouse1_classification_genus.tsv
 ```
 
 **Notes**:
@@ -468,7 +468,7 @@ bwa mem -t 4 mouse1_contigs.fasta mouse1_mRNA.fastq > mouse1_contigs.sam
 We then extract unmapped reads into a fastq format file for subsequent processing and generate a mapping table in which each contig is associated with the number of reads used to assemble that contig. This table is useful for determining how many reads map to a contig and is used for determining relative expression (see Steps 6 and 8).
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
+python2 ./5_Contig_Map.py mouse1_mRNA.fastq mouse1_contigs.sam mouse1_unassembled.fastq mouse1_contigs_map.tsv
 ```
 
 **Notes**:
@@ -501,7 +501,7 @@ Since BWA utilizes nucleotide searches, we rely on a [microbial genome database]
 
 -  Then you would run the following python script to extract high confidence alignments to the `microbial_all_cds.fasta` database and generate a read to gene mapping table. Here we are only taking one gene per contig, but it is possible that contigs may have more than one genes (e.g. co-transcribed genes).
 
-   -  `/home/ubuntu/.conda/envs/spa/bin/python ./6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
+   -  `python2 ./6_BWA_Gene_Map.py microbial_all_cds.fasta mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_genes.fasta mouse1_contigs.fasta mouse1_contigs_annotation_bwa.sam mouse1_contigs_unmapped.fasta mouse1_unassembled.fastq mouse1_unassembled_annotation_bwa.sam mouse1_unassembled_unmapped.fasta`
 
 -  The argument structure for this script is:
 
@@ -527,7 +527,7 @@ Since BWA utilizes nucleotide searches, we rely on a [microbial genome database]
 
 -  From the output of these searches, you would need to extract the top matched proteins using the script below. Here we consider a match if 85% sequence identity over 65% of the read length - this can result in very poor e-values (E = 3!) but the matches nonetheless appear reasonable.
 
-   -  `/home/ubuntu/.conda/envs/spa/bin/python ./7_Diamond_Protein_Map.py nr mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_proteins.fasta mouse1_contigs_unmapped.fasta mouse1_contigs.dmdout mouse1_contigs_unannotated.fasta mouse1_unassembled_unmapped.fasta mouse1_unassembled.dmdout mouse1_unassembled_unannotated.fasta`
+   -  `python2 ./7_Diamond_Protein_Map.py nr mouse1_contigs_map.tsv mouse1_genes_map.tsv mouse1_proteins.fasta mouse1_contigs_unmapped.fasta mouse1_contigs.dmdout mouse1_contigs_unannotated.fasta mouse1_unassembled_unmapped.fasta mouse1_unassembled.dmdout mouse1_unassembled_unannotated.fasta`
 
 -  The argument structure for this script is:
 
@@ -574,7 +574,7 @@ diamond blastp -p 4 -d swiss_db -q mouse1_proteins.fasta -o mouse1_proteins.diam
 We then need to generate a mapping file which lists our gene/protein and the enzyme commission (EC) number, describing enzymatic function, which corresponds to it:
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./8_Gene_EC_Map.py swiss_map.tsv mouse1_genes.diamondout mouse1_proteins.diamondout mouse1_EC_map.tsv
+python2 ./8_Gene_EC_Map.py swiss_map.tsv mouse1_genes.diamondout mouse1_proteins.diamondout mouse1_EC_map.tsv
 ```
 
 The argument structure for this script is:
@@ -588,7 +588,7 @@ The argument structure for this script is:
 We have removed low quality bases/reads, vectors, adapters, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-/home/ubuntu/.conda/envs/spa/bin/python ./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
+python2 ./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
 ```
 
 **Notes**:
