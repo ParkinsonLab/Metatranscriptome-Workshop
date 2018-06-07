@@ -588,14 +588,14 @@ The argument structure for this script is:
 We have removed low quality bases/reads, vectors, adapters, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-python2 ./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
+python2 ./9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscape.txt
 ```
 
 **Notes**:
 
 -   The argument structure for this script is:
 
-    -   `9_RPKM.py <nodes_file> <kaiju_Classification> <Gene_Mapping_File> <EC_Mapping_File> <RPKM_Output> <Cytoscope_Attributes_Output>`
+    -   `9_RPKM.py <nodes_file> <kaiju_Classification> <Gene_Mapping_File> <EC_Mapping_File> <RPKM_Output> <Cytoscape_Attributes_Output>`
 
 -   The structure of the output file `mouse1_RPKM.txt` is:
     -   `[geneID/proteinID, length, #reads, EC#, Total RPKM, RPKM per phylum]`
