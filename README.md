@@ -139,7 +139,7 @@ firefox mouse_merged_trim_fastqc.html
 
 **Read quality filtering**
 
-Trimmomatic, which was used to remove the adapters and trim low quality bases in the reads, uses a sliding widow method to remove contigous regions of low quality bases in reads. However, it is worthwhile to impose an overall read quality threshold to ensure that all reads being used in our analyses are of sufficiently error-free. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch) (when processing paired-end data, this step should come **after** the read merging step):
+Trimmomatic, which was used to remove the adapters and trim low quality bases in the reads, uses a sliding window method to remove contigous regions of low quality bases in reads. However, it is worthwhile to impose an overall read quality threshold to ensure that all reads being used in our analyses are of sufficiently error-free. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch) (when processing paired-end data, this step should come **after** the read merging step):
 
 ```
 vsearch --fastq_filter mouse1_trim.fastq --fastq_maxee 2.0 --fastqout mouse1_qual.fastq
