@@ -86,13 +86,13 @@ Trimmomatic can rapidly identify and trim adaptor sequences, as well as identify
 ```
 ln -s /usr/local/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters
 java -jar /usr/local/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+```
 
 If you've downloaded the newest version of microbiome helper and getting and error, try the following instead:
 
+```
 ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters
 java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
-
-
 ```
 
 **Notes**:
