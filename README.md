@@ -84,20 +84,13 @@ To open the HTML report file use the following command `firefox mouse1_fastqc.ht
 Trimmomatic can rapidly identify and trim adaptor sequences, as well as identify and remove low quality sequence data - It is already installed on the PCs
 
 ```
-ln -s /usr/local/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters
-java -jar /usr/local/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
-```
-
-If you've downloaded the newest version of microbiome helper and getting an error, try the following instead:
-
-```
 ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters
 java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
 ```
 
 **Notes**:
 
--   `ln -s /usr/local/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapter` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
+-   `ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
 -   The command line parameters are:
     -   `SE`: The input data are single-end reads.
     -   `ILLUMINACLIP:Adapters:2:30:10`: remove the adapters.
@@ -179,7 +172,7 @@ Compare with the previous reports to see changes in the following sections:
 To significantly reduce the amount of computating time required for identification and filtering of rRNA reads, we perform a dereplication step to remove duplicated reads using the software tool CD-HIT which can be obtained from this [website](https://github.com/weizhongli/cdhit).
 
 ```
-/usr/local/cd-hit-v4.6.8/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
+/usr/local/prg/cd-hit-v4.6.7-2017-0501/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
 ```
 
 **Notes**:
@@ -440,7 +433,7 @@ Hint: Try decreasing the `Max depth` value on the top left of the screen and/or 
 Previous studies have shown that assembling reads into larger contigs significantly increases our ability to annotate them to known genes through sequence similarity searches. Here we will apply the SPAdes genome assemblers' transcript assembly algorithm to our set of putative mRNA reads.
 
 ```
-/usr/local/SPAdes-3.11.1-Linux/bin/spades.py --rna -s mouse1_mRNA.fastq -o mouse1_spades
+/usr/local/prg/SPAdes-3.10.1/bin/spades.py --rna -s mouse1_mRNA.fastq -o mouse1_spades
 mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
 ```
 
@@ -493,7 +486,7 @@ Since BWA utilizes nucleotide searches, we rely on a [microbial genome database]
 -   The systems used in the workshop do not have enough memory to handle indexing or searching large databases like `microbial_all_cds.fasta` (9GB) and `nr` (>60GB). The descriptions in this section are purely for your information. Please use our precomputed gene, protein, and read mapping files from the tar file `tar -xzf precomputed_files.tar.gz mouse1_genes_map.tsv mouse1_genes.fasta mouse1_proteins.fasta`
 -   While we only utilize BWA here, it is possible to use BWA followed BLAT for a more thorough search of the `microbial_all_cds.fasta` like we described in Steps 3 and 4. This limits the number of searches that need to be completed against the much larger NCBI nr database by Diamond/BLAST.
 -   the commands used to build the indexed databases are as follows (You don't need to do these!)
-    -   `bwa index -a microbial_all_cds.fasta`
+    -   `bwa index -a bwtsw microbial_all_cds.fasta`
     -   `samtools faidx microbial_all_cds.fasta`
     -   `diamond makedb -p 8 --in nr -d nr`
 
