@@ -118,7 +118,7 @@ Compare with the previous report to see changes in the following sections:
 If you were working with a paired-end dataset, we could identify pairs of sequence reads that overlap and can therefore be merged into a single sequence. For this we use the tool VSEARCH which can be found at this [website](https://github.com/torognes/vsearch):
 
 ```
-Exmaple only, do not run!
+Example only, do not run!
 vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastqout mouse_merged_trim.fastq --fastqout_notmerged_fwd mouse1_merged_trim.fastq --fastqout_notmerged_rev mouse2_merged_trim.fastq
 ```
 
@@ -133,6 +133,7 @@ vsearch --fastq_mergepairs mouse1_trim.fastq --reverse mouse2_trim.fastq --fastq
 If you want to see the distribution of merged read lengths you can use fastqc to examine the read properties:
 
 ```
+Also example only!
 fastqc mouse_merged_trim.fastq
 firefox mouse_merged_trim_fastqc.html
 ```
@@ -543,7 +544,8 @@ Thus of ~83000 reads of putative microbial mRNA origin, we can annotate ~55000 o
 
 Remember, to extract the precomputed output files for this step:
 
-`tar -xzf precomputed_files.tar.gz mouse1_genes_map.tsv mouse1_genes.fasta mouse1_proteins.fasta`
+`Run this one!
+tar -xzf precomputed_files.tar.gz mouse1_genes_map.tsv mouse1_genes.fasta mouse1_proteins.fasta`
 
 ### Step 10. Enzyme Function Annotation
 
