@@ -99,7 +99,7 @@ java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq m
     -   `SLIDINGWINDOW:4:15`: Scan with a window of size 4 for reads with local quality below a score of 15, and trim if found.
     -   `MINLEN:50`: Delete a sequence with a length less than 50.
 
-***Question 1: How many low quality sequences have been removed?***
+<!-- ***Question 1: How many low quality sequences have been removed?*** -->
 
 Checking read quality with FastQC:
 
@@ -166,7 +166,7 @@ Compare with the previous reports to see changes in the following sections:
 -   Per base sequence quality
 -   Per sequence quality
 
-***Question 2: How has the per read sequence quality curve changed?***
+<!-- ***Question 2: How has the per read sequence quality curve changed?*** -->
 
 ### Step 2. Remove duplicate reads
 
@@ -183,7 +183,7 @@ To significantly reduce the amount of computating time required for identificati
     -   `-o`: The output file containing dereplicated sequences, where a unique representative sequence is used to represent each set of sequences with multiple replicates.
 -   A second output file `mouse1_unique.fastq.clstr` is created which shows exactly which replicated sequences are represented by each unique sequence in the dereplicated file and a third, empty, output file, `mouse1_unique.fastq2.clstr` is also created which is only used for paired-end reads.
 
-***Question 3: Can you find how many unique reads there are?***
+<!-- ***Question 3: Can you find how many unique reads there are?*** -->
 
 While the number of replicated reads in this small dataset is relatively low, with larger datasets, this step can reduce file size by as much as 50-80%
 
@@ -219,7 +219,7 @@ samtools fastq -n -f 4 -0 mouse1_univec_bwa.fastq mouse1_univec_bwa.bam
     -   `samtools view`: Converts the .sam output of bwa into .bam for the following steps
     -   `samtools fastq`: Generates fastq outputs for all reads that mapped to the vector contaminant database (`-F 4`) and all reads that did not map to the vector contaminant database (`-f 4`)
 
-***Question 4: Can you find how many reads BWA mapped to the vector database?***
+<!-- ***Question 4: Can you find how many reads BWA mapped to the vector database?*** -->
 
 Now we want to perform additional alignments for the reads with BLAT to filter out any remaining reads that align to our vector contamination database. However, BLAT only accepts fasta files so we have to convert our reads from fastq to fasta. This can be done using VSEARCH.
 
@@ -297,7 +297,7 @@ blat -noHead -minIdentity=90 -minScore=65  mouse_cds.fa mouse1_mouse_bwa.fasta -
 ./1_BLAT_Filter.py mouse1_mouse_bwa.fastq mouse1_mouse.blatout mouse1_mouse_blat.fastq mouse1_mouse_blat_contaminats.fastq
 ```
 
-***Question 5: How many reads did BWA and BLAT align to the mouse host sequence database?***
+<!-- ***Question 5: How many reads did BWA and BLAT align to the mouse host sequence database?*** -->
 
 ***Optional:*** In your own future analyses you can choose to complete steps 3 and 4 simultaneously by combining the vector contamination database and the host sequence database using `cat UniVec_Core mouse_cds.fa > contaminants.fa`. However, doing these steps together makes it difficult to tell how much of your reads came specifically from your host organism.
 
@@ -335,7 +335,7 @@ The argument structure for this script is:
 
 Here, we only remove a few thousand reads than map to rRNA, but in some datasets rRNA may represent up to 80% of the sequenced reads.
 
-***Question 6: How many rRNA sequences were identified? How many reads are now remaining?***
+<!-- ***Question 6: How many rRNA sequences were identified? How many reads are now remaining?*** -->
 
 
 ### Step 6. Rereplication
@@ -351,7 +351,7 @@ After removing contaminants, host sequences, and rRNA, we need to replace the pr
 The argument structure for this script is:
 `3_Reduplicate.py <Duplicated_Reference_File> <Deduplicated_File> <CDHIT_Cluster_File> <Reduplicated_Output>`
 
-***Question 7: How many putative mRNA sequences were identified? How many unique mRNA sequences?***
+<!-- ***Question 7: How many putative mRNA sequences were identified? How many unique mRNA sequences?*** -->
 
 Now that we have filtered vectors, adapters, linkers, primers, host sequences, and rRNA, check read quality with FastQC:
 
@@ -360,7 +360,7 @@ fastqc mouse1_mRNA.fastq
 firefox mouse1_mRNA_fastqc.html
 ```
 
-***Question 8: How many total contaminant, host, and rRNA reads were filtered out?***
+<!-- ***Question 8: How many total contaminant, host, and rRNA reads were filtered out?*** -->
 
 ### Step 7. Taxonomic Classification
 
@@ -409,7 +409,7 @@ Then we generate a human readable summary of the classification using Kaiju.
     -   `-o`: The summary report output file
     -   `-r`: The taxonomic rank for which the summary will be produced
 
-***Question 9: How many reads did kaiju classify?***
+<!-- ***Question 9: How many reads did kaiju classify?*** -->
 
 Lastly, we will use [Krona] (https://github.com/marbl/Krona/wiki) to generate a hierarchical multi-layered pie chart summary of the taxonomic composition of our dataset.
 
@@ -426,8 +426,10 @@ We can then view this pie chart representation of our dataset using a web browse
 firefox mouse1_classification.html
 ```
 
+<!-- 
 ***Question 10: What is the most abundant family in our dataset? What is the most abundant phylum?  
 Hint: Try decreasing the `Max depth` value on the top left of the screen and/or double clicking on spcific taxa.***
+-->
 
 ### Step 8. Assembling reads
 
@@ -446,9 +448,10 @@ mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
     -   `-o`: The output directory
 -   SPAdes assembles reads into contigs which are placed into a file named `mouse1_spades/transcripts.fasta`
 
+<!--
 ***Question 11: How many assemblies did SPAdes produce?  
 Hint: try using the command`tail mouse1_contigs.fasta`***
-
+-->
 In order to extract unassembled reads we need to map all putative mRNA reads to our set of assembled contigs by BWA.
 
 First, we need to build an index to allow BWA to search against our set of contigs:
@@ -474,8 +477,9 @@ We then extract unmapped reads into a fastq format file for subsequent processin
 The argument structure for this script is:
 `5_Contig_Map.py <Reads_Used_In_Alignment> <Output_SAM_From_BWA> <Output_File_For_Unassembed_Reads> <Output_File_For_Contig_Map>`
 
+<!--
 ***Question 12: How many reads were not used in contig assembly? How many reads were used in contig assembly? How many contigs did we generate?***
-
+-->
 ### Step 9. Annotate reads to known genes/proteins
 
 Here we will attempt to infer the specific genes our putative mRNA reads originated from. In our pipeline we rely on a tiered set of sequence similarity searches of decreasing accuracy - BWA and DIAMOND. While BWA provides high stringency, sequence diversity that occurs at the nucleotide level results in few matches observed for these processes. Nonetheless it is quick. To avoid the problems of diversity that occur at the level of nucleotide, particularly in the absence of reference microbial genomes, we use DIAMOND searches to provide more sensitive peptide-based searches, which are less prone to sequence changes between strains.
@@ -533,8 +537,9 @@ The argument structure for this script is:
 
 Because the non-redundant protein database contains entries from many species, including eukaryotes, we often find that sequence reads can match multiple protein with the same score. From these multiple matches, we currently select the first (i.e. 'top hit'). As mentioned in the metagenomics lecture, more sophisticated algorithms could be applied, however our current philosophy is that proteins sharing the same sequence match are likely to possess similar functions in any event; taxonomy is a separate issue however!
 
+<!--
 ***Question 13: How many reads were mapped in each step? How many genes were the reads mapped to? How many proteins were the genes mapped to?***
-
+-->
 -   Total number of mapped-reads with BWA = 3356 reads
 -   Total number of mapped genes (BWA) = 1234
 -   Total number of mapped-reads with DIAMOND = 51936 reads
@@ -580,8 +585,9 @@ The argument structure for this script is:
 
 `8_Gene_EC_Map.py <SWISS-PROT_EC_Mappings> <Diamond_Output_For_Genes> <Diamond_Output_For_Proteins> <Output_EC_Mapping_File>`
 
+<!--
 ***Question 14: How many unique enzyme functions were identified in our dataset?***
-
+-->
 ### Step 11. Generate normalized expression values associated with each gene
 
 We have removed low quality bases/reads, vectors, adapters, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
@@ -600,8 +606,9 @@ We have removed low quality bases/reads, vectors, adapters, linkers, primers, ho
     -   `[geneID/proteinID, length, #reads, EC#, Total RPKM, RPKM per phylum]`
     -   `gi|110832861|ref|NC_008260.1|:414014-415204 1191 1 3.9.3.5 106.98 0 0 45.89 6.86 20.77 7.35 2.3 0 4.63`
 
+<!--
 ***Question 15: have a look at the `mouse1_RPKM.txt` file. What are the most highly expressed genes? Which phylum appears most active?***
-
+-->
 ### Step 10. Visualize the results using a KEGG Pathway as a scaffold in Cytoscape.
 
 To visualize our processed microbiome dataset in the context of the carbohydrate metabolism pathways, we use the network visualization tool - Cytoscape together with the enhancedGraphics and KEGGscape plugins. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
