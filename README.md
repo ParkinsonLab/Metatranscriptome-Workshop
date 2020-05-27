@@ -549,8 +549,10 @@ Thus of ~83000 reads of putative microbial mRNA origin, we can annotate ~55000 o
 
 Remember, to extract the precomputed output files for this step:
 
-`Run this one!
-tar -xzf precomputed_files.tar.gz mouse1_genes_map.tsv mouse1_genes.fasta mouse1_proteins.fasta`
+```
+Run this one!  
+tar -xzf precomputed_files.tar.gz mouse1_genes_map.tsv mouse1_genes.fasta mouse1_proteins.fasta
+```
 
 ### Step 10. Enzyme Function Annotation
 
