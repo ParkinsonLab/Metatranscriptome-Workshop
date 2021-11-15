@@ -264,12 +264,12 @@ some alignments to vector contaminants missed by BWA in large multi-million read
 
 ### Step 4. Remove host reads
 
-To identify and filter host reads (here, reads of mouse origin) we repeat the steps above using a database of mouse DNA sequences. For our purposes we use a [mouse genome database](ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz) downloaded from Ensembl.
+To identify and filter host reads (here, reads of mouse origin) we repeat the steps above using a database of mouse DNA sequences. For our purposes we use a [mouse genome database](ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm39.cds.all.fa.gz) downloaded from Ensembl.
 
 ```
-wget ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz
-gzip -d Mus_musculus.GRCm38.cds.all.fa.gz
-mv Mus_musculus.GRCm38.cds.all.fa mouse_cds.fa
+wget ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cds/Mus_musculus.GRCm39.cds.all.fa.gz
+gzip -d Mus_musculus.GRCm39.cds.all.fa.gz
+mv Mus_musculus.GRCm39.cds.all.fa mouse_cds.fa
 ```
 
 Then we repeat the steps above used to generate an index for these sequences for BWA and BLAT:
