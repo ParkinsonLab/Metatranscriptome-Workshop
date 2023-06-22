@@ -15,11 +15,11 @@ This tutorial will take you through a pipeline for processing metatranscriptomic
 5.  Remove abundant rRNA sequences which typically dominate metatranscriptomic datasets despite the use of rRNA removal kits.
 6.  Add duplicated reads, removed in step 2, back to the data set to improve quality of assemblies.
 7.  Classify reads to known taxonomic groups and visualize the taxonomic composition of your dataset.
-9.  Assemble the reads into contigs to improve annotation quality.
-10.  Annotate reads to known genes.
-11.  Map identified genes to the swiss-prot database to identify enzyme function
-12.  Generate normalized expression values associated with each gene.
-13. Visualize the results using KEGG metabolic pathways as scaffolds in Cytoscape.
+8.  Assemble the reads into contigs to improve annotation quality.
+9.  Annotate reads to known genes.
+10.  Map identified genes to the swiss-prot database to identify enzyme function
+11.  Generate normalized expression values associated with each gene.
+12. Visualize the results using KEGG metabolic pathways as scaffolds in Cytoscape.
 
 The whole metatranscriptomic pipeline includes existing bioinformatic tools and a series of Python scripts that handle file format conversion and output parsing. We will go through these steps to illustrate the complexity of the process and the underlying tools and scripts.
 
@@ -611,7 +611,7 @@ We have removed low quality bases/reads, vectors, adapters, linkers, primers, ho
 <!--
 ***Question 15: have a look at the `mouse1_RPKM.txt` file. What are the most highly expressed genes? Which phylum appears most active?***
 -->
-### Step 10. Visualize the results using a KEGG Pathway as a scaffold in Cytoscape.
+### Step 12. Visualize the results using a KEGG Pathway as a scaffold in Cytoscape.
 
 To visualize our processed microbiome dataset in the context of the carbohydrate metabolism pathways, we use the network visualization tool - Cytoscape together with the enhancedGraphics and KEGGscape plugins. Some useful commands for loading in networks, node attributes and changing visual properties are provided below (there are many cytoscape tutorials available online).
 
