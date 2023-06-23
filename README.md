@@ -173,7 +173,7 @@ Compare with the previous reports to see changes in the following sections:
 To significantly reduce the amount of computating time required for identification and filtering of rRNA reads, we perform a dereplication step to remove duplicated reads using the software tool CD-HIT which can be obtained from this [website](https://github.com/weizhongli/cdhit).
 
 ```
-/usr/local/prg/cd-hit-v4.6.7-2017-0501/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
+/usr/local/cd-hit-v4.8.1-2019-0228/cd-hit-auxtools/cd-hit-dup -i mouse1_qual.fastq -o mouse1_unique.fastq
 ```
 
 **Notes**:
