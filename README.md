@@ -36,8 +36,8 @@ Rather than use the entire set of 25 million read, which might take several days
 Create a new directory that will store all of the files created in this lab.
 
 ```
-mkdir -p ~/metatranscriptomics
-cd ~/metatranscriptomics
+mkdir -metatranscriptomics
+cd metatranscriptomics/
 ```
 
 ### Python Scripts
