@@ -45,7 +45,7 @@ cd ~/metatranscriptomics
 We have written a number of scripts to extract and analyze data from the tools you will be using. Download our package for the metatranscriptomics workshop and extract our python scripts.
 
 ```
-wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/Extra/precomputed_files.tar.gz
+wget https://github.com/ParkinsonLab/2017-Microbiome-Workshop/releases/download/CBW2023/precomputed_files_cbw_2023.tar.gz
 tar --wildcards -xvf precomputed_files.tar.gz *.py
 ```
 
