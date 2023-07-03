@@ -84,13 +84,14 @@ To open the HTML report file use the following command `firefox mouse1_fastqc.ht
 Trimmomatic can rapidly identify and trim adaptor sequences, as well as identify and remove low quality sequence data - It is already installed on the PCs
 
 ```
-ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters
-java -jar /usr/local/prg/Trimmomatic-0.36/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+tar -xvf precomputed_files.tar.gz TruSeq3-SE.fa
+ln -s TruSeq3-SE.fa Adapters
+java -jar /usr/local/trimmomatic-0.36.jar SE mouse1.fastq mouse1_trim.fastq ILLUMINACLIP:Adapters:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
 ```
 
 **Notes**:
 
--   `ln -s /usr/local/prg/Trimmomatic-0.36/adapters/TruSeq3-SE.fa Adapters` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
+-   `ln -s TruSeq3-SE.fa Adapters` is used to create a symbolic link to the Trimmomatic supplied single-end adapter sequence files suitable for use with sequences produced by HiSeq and MiSeq machines. However, this file should be replaced with known adapter files from your own sequencing project if possible.
 -   The command line parameters are:
     -   `SE`: The input data are single-end reads.
     -   `ILLUMINACLIP:Adapters:2:30:10`: remove the adapters.
@@ -435,7 +436,7 @@ Hint: Try decreasing the `Max depth` value on the top left of the screen and/or 
 Previous studies have shown that assembling reads into larger contigs significantly increases our ability to annotate them to known genes through sequence similarity searches. Here we will apply the SPAdes genome assemblers' transcript assembly algorithm to our set of putative mRNA reads.
 
 ```
-/usr/local/prg/SPAdes-3.10.1/bin/spades.py --rna -s mouse1_mRNA.fastq -o mouse1_spades
+/usr/local/bin/spades.py --rna -s mouse1_mRNA.fastq -o mouse1_spades
 mv mouse1_spades/transcripts.fasta mouse1_contigs.fasta
 ```
 
