@@ -251,6 +251,7 @@ blat -noHead -minIdentity=90 -minScore=65  UniVec_Core mouse1_univec_bwa.fasta -
 Lastly, we can run a small python script to filter the reads that BLAT does not confidently align to any sequences from our vector contamination database.
 
 ```
+pip install biopython
 python 1_BLAT_Filter.py mouse1_univec_bwa.fastq mouse1_univec.blatout mouse1_univec_blat.fastq mouse1_univec_blat_contaminats.fastq
 ```
 
@@ -595,7 +596,7 @@ The argument structure for this script is:
 We have removed low quality bases/reads, vectors, adapters, linkers, primers, host sequences, and rRNA sequences and annotated reads to the best of our ability - now lets summarize our findings. We do this by looking at the relative expression of each of our genes in our microbiome.
 
 ```
-python 9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscope.txt
+python 9_RPKM.py nodes.dmp mouse1_classification.tsv mouse1_genes_map.tsv mouse1_EC_map.tsv mouse1_RPKM.txt mouse1_cytoscape.txt
 ```
 
 **Notes**:
